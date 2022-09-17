@@ -1,0 +1,60 @@
+GET http://localhost:8080/duel/
+
+###
+
+POST http://localhost:8080/duel/
+Content-Type: application/json
+
+{
+  "players": ["jeffrey", "rico"],
+  "rating": "1200-1600",
+  "problemCount": "5",
+  "timeLimit": "30",
+  "style": "Normal",
+  "status": "FINISHED",
+  "result": ["WON", "jeffrey"]
+}
+
+###
+
+DELETE http://localhost:8080/duel/
+
+###
+
+GET http://localhost:8080/user/
+
+###
+
+POST http://localhost:8080/user/
+Content-Type: application/json
+
+{
+  "handle": "davidchi",
+  "rating": 1200,
+  "rank": "master"
+}
+
+###
+
+DELETE http://localhost:8080/user/
+
+###
+
+GET http://localhost:8080/problem/
+
+###
+
+POST http://localhost:8080/problem/
+Content-Type: application/json
+
+{
+  "contest_id": 1722,
+  "index": "G",
+  "name": "Even-Odd XOR",
+  "rating": 1500,
+  "tags": ["bitmasks", "constructive algorithms", "greedy", "*1500"]
+}
+
+###
+
+DELETE http://localhost:8080/problem/
