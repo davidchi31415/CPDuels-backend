@@ -19,7 +19,7 @@ duelsRouter.get('/:id', getDuel, (req, res) => {
 });
 
 // POST one duel
-duelsRouter.post('/', async (req, res) => {
+duelsRouter.post('/add', async (req, res) => {
   const duel = new duelModel(req.body);
   try {
     const newDuel = await duel.save();

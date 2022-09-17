@@ -19,7 +19,7 @@ problemsRouter.get('/:id', getProblem, (req, res) => {
 });
 
 // POST one problem
-problemsRouter.post('/', async (req, res) => {
+problemsRouter.post('/add', async (req, res) => {
   const problem = new problemModel(req.body);
   try {
     const newProblem = await problem.save();

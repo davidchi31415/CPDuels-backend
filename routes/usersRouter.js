@@ -19,7 +19,7 @@ usersRouter.get('/:id', getUser, (req, res) => {
 });
 
 // POST one user
-usersRouter.post('/', async (req, res) => {
+usersRouter.post('/add', async (req, res) => {
   const user = new userModel(req.body);
   try {
     const newUser = await user.save();

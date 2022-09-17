@@ -18,6 +18,10 @@ const db = mongoose.connection;
 db.on('error', (err) => console.log(err));
 db.once('open', () => console.log("Connected to database."));
 
+// const uri = process.env.ATLAS_URI;
+// mongoose.connect(uri { useNewUrlParser: true, useCreateIndex: true });
+
+
 app.use(cors({ origin: `http://localhost:${process.env.CLIENT_PORT}` }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
