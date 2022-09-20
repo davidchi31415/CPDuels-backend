@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const problemSchema = mongoose.Schema({
-  contest_id: {
+  contestId: {
     type: Number,
     required: true
   },
