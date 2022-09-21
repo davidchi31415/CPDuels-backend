@@ -8,8 +8,12 @@ const duelSchema = mongoose.Schema({
     required: true,
     default: ["Guest", "Guest"]
   },
-  rating: {
-    type: String,
+  ratingMin: {
+    type: Number,
+    required: true
+  },
+  ratingMax: {
+    type: Number,
     required: true
   },
   problemCount: {

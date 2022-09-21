@@ -18,7 +18,7 @@ const problemSchema = mongoose.Schema({
     required: true,
     default: "PROGRAMMING"
   },
-  rating: {
+  points: {
     type: Number,
     required: true
   },
