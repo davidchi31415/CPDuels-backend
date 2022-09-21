@@ -2,7 +2,6 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import duelsRouter from './routes/duelsRouter.js';
-import usersRouter from './routes/usersRouter.js';
 import problemsRouter from './routes/problemsRouter.js';
 import update_problemset from './utils/tasks.js';
 
