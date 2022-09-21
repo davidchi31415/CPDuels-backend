@@ -26,11 +26,6 @@ const duelSchema = mongoose.Schema({
     required: true,
     default: 30
   },
-  style: {
-    type: String,
-    required: true,
-    default: "Normal"
-  },
   private: {
     type: Boolean,
     required: true,
