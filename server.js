@@ -26,8 +26,7 @@ app.use(cors({ origin: `http://localhost:${process.env.CLIENT_PORT}` }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/duel', duelsRouter);
-app.use('/user', usersRouter)
-app.use('/problem', problemsRouter)
+app.use('/problem', problemsRouter);
 
 app.listen(process.env.BACKEND_PORT, () => console.log("Server is started."));
 
