@@ -30,8 +30,16 @@ duelsRouter.post('/add', async (req, res) => {
 });
 
 // PATCH one duel
-duelsRouter.get('/:id', getDuel, (req, res) => {
-
+duelsRouter.patch('/:id', getDuel, async (req, res) => {
+  if (req.body.status != null) {
+    res.duel.status = req.body.status;
+  }
+  try {
+    const updatedDuel = await res.duel.save();
+    res.json(updatedDuel);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
 });
 
 // DELETE one duel

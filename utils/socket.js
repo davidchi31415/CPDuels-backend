@@ -1,5 +1,6 @@
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
+import DuelManager from './duelManager.js';
 
 dotenv.config();
 
@@ -17,18 +18,23 @@ function getTimeLeft(startTime, maxTime, interval=null) {
   return Math.ceil((maxTime - timeDifference)/1000);
 }
 
-io.on('connection', (socket) => {
-    socket.on('Join', (roomId) => {
+io.on('connection', async (socket) => {
+    socket.on('join', (roomId) => {
         socket.join(roomId);
     });
-    socket.on('startTimer', (roomId, timeLimit) => {
-        console.log('Yo here we go again');
-        const startTime = new Date();
-        const maxTime = timeLimit*1000; // 60 seconds
-        socket.to(roomId).emit('timeLeft', getTimeLeft(startTime, maxTime));
-        let interval = setInterval(() => {
-            socket.to(roomId).emit('timeLeft', getTimeLeft(startTime, maxTime, interval));
-        }, 500);
+    socket.once('startTimer', async ({ roomId, timeLimit }) => {
+        let duelState = await DuelManager.getDuelState(roomId);
+        if (duelState === 'WAITING') {
+            await DuelManager.changeDuelState(roomId, "ONGOING");
+            console.log('Yo here we go again');
+            console.log(roomId);
+            const startTime = new Date();
+            const maxTime = timeLimit*1000; // 60 seconds
+            socket.to(roomId).emit('timeLeft', getTimeLeft(startTime, maxTime));
+            let interval = setInterval(() => {
+                socket.to(roomId).emit('timeLeft', getTimeLeft(startTime, maxTime, interval));
+            }, 500);
+        }
     });
 });
 
