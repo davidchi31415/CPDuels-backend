@@ -19,9 +19,7 @@ const db = mongoose.connection;
 db.on('error', (err) => console.log(err));
 db.once('open', () => console.log("Connected to database."));
 
-update_problemset();
-
-app.use(cors({ origin: `http://localhost:${process.env.FRONTEND_PORT}` }));
+app.use(cors({ origin: `http://localhost:3000` }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/duel', duelsRouter);
@@ -30,19 +28,28 @@ app.use('/problem', problemsRouter);
 app.listen(process.env.BACKEND_PORT, () => console.log("Server is started."));
 
 const io = new Server(8081, { cors: { origin: "http://localhost:3000" } });
-const timeouts = [];
+
+function getTimeLeft(startTime, maxTime, interval=null) {
+  const curTime = new Date();
+
+  let timeDifference = Math.abs(curTime.getTime() - startTime.getTime());
+
+  if (timeDifference >= maxTime) {
+    if (interval) clearInterval(interval);
+    return "Time's up.";
+  }
+  return Math.ceil((maxTime - timeDifference)/1000);
+}
 
 io.on('connection', (socket) => {
-    socket.on('Start Timer', () => {
+    socket.on('startTimer', (timeLimit) => {
         console.log('Yo here we go again');
-        let timeout = setTimeout(() => {
-            io.emit('Duel Over');
-        }, 5000);
-        timeouts.push(timeout);
-    });
-    socket.on('Stop Timer', () => {
-        clearTimeout(timeouts[timeouts.length-1]);
-        console.log("Timer stopped.");  
+        const startTime = new Date();
+        const maxTime = timeLimit*1000; // 60 seconds
+        socket.emit('timeLeft', getTimeLeft(startTime, maxTime));
+        let interval = setInterval(() => {
+            socket.emit('timeLeft', getTimeLeft(startTime, maxTime, interval));
+        }, 500);
     });
 });
 
