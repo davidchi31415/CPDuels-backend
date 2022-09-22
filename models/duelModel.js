@@ -36,6 +36,11 @@ const duelSchema = mongoose.Schema({
     required: true,
     default: "WAITING" // ONGOING, FINISHED
   },
+  problems: {
+    type: [],
+    required: true,
+    default: []
+  },
   result: {
     type: [{
       type: String,
