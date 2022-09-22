@@ -8,6 +8,7 @@ import { Server } from 'socket.io';
 
 // ENVIRONMENT VARIABLES
 import dotenv from 'dotenv';
+import find_problems from './utils/codeforces.js';
 
 dotenv.config();
 
@@ -17,7 +18,11 @@ mongoose.connect(process.env.DATABASE_URL);
 const db = mongoose.connection;
 
 db.on('error', (err) => console.log(err));
-db.once('open', () => console.log("Connected to database."));
+db.once('open', async () => {
+    console.log("Connected to database.");
+    let problems = await find_problems({ rating: { $gt: 1799}});
+    console.log(problems);
+});
 
 app.use(cors({ origin: `http://localhost:3000` }));
 app.use(express.json());
@@ -27,7 +32,7 @@ app.use('/problem', problemsRouter);
 
 app.listen(process.env.BACKEND_PORT, () => console.log("Server is started."));
 
-const io = new Server(8081, { cors: { origin: "http://localhost:3000" } });
+const io = new Server(process.env.WEBSOCKET_PORT, { cors: { origin: "http://localhost:3000" } });
 
 function getTimeLeft(startTime, maxTime, interval=null) {
   const curTime = new Date();
