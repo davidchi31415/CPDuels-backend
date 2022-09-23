@@ -12,7 +12,7 @@ async function getTimeLeft(startTime, maxTime, interval, roomId, io) {
     if (timeDifference >= maxTime) {
       if (interval) clearInterval(interval);
       await DuelManager.changeDuelState(roomId, "FINISHED");
-      io.emit('status-change', "FINISHED");
+      io.emit('status-change', {roomId: roomId, newStatus: "FINISHED"});
       return "Time's up.";
     }
     return Math.ceil((maxTime - timeDifference)/1000);
@@ -28,14 +28,14 @@ io.on('connection', async (socket) => {
             let duel = await DuelManager.findDuel(roomId);
             let timeLimit = duel.timeLimit;
             const startTime = new Date();
-            const maxTime = timeLimit * 60000; // seconds to minutes, but in milliseconds
+            const maxTime = timeLimit * 60000; // minutes to milliseconds
             await DuelManager.changeDuelState(roomId, "ONGOING");
-            io.emit('status-change', "ONGOING");
+            io.emit('status-change', {roomId: roomId, newStatus: "ONGOING"});
             console.log('Yo here we go again');
-            io.emit('time-left', timeLimit);
+            io.emit('time-left', {roomId: roomId, timeLeft: timeLimit * 60});
             let interval = setInterval(async () => {
                 let timeLeft = await getTimeLeft(startTime, maxTime, interval, roomId, io);
-                io.emit('time-left', timeLeft);
+                io.emit('time-left', {roomId: roomId, timeLeft: timeLeft});
             }, 500);
         }
     });
