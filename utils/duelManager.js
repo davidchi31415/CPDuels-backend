@@ -14,16 +14,32 @@ class DuelManager {
         return result;
     }
 
+    static async findDuel(id) {
+        try {
+            let duels = await db.collection('duels').find({
+                _id: ObjectId(id)
+            }, {}).toArray();
+            if (duels.length != 0 ) return duels[0];
+        } catch (err) {
+            console.log("Error: invalid getDuelState() request... Probably an invalid id.");
+        }
+        return null; // if no duel found
+    }
+
     static async getDuelState(id) {
-        let duels = await db.collection('duels').find({
-            _id: ObjectId(id)
-        }, {}).toArray();
-        if (duels.length != 0 ) return duels[0].status;
-        return -1;
+        try {
+            let duels = await db.collection('duels').find({
+                _id: ObjectId(id)
+            }, {}).toArray();
+            if (duels.length != 0 ) return duels[0].status;
+        } catch (err) {
+            console.log("Error: invalid getDuelState() request... Probably an invalid id.");
+        }
+        return null; // if no duel found
     }
 
     static async changeDuelState(id, state) {
-        console.log('runing');
+        console.log('Duel ' + id + ' State Changed to ' + state);
         await db.collection('duels').findOneAndUpdate(
             {
                 _id: ObjectId(id)

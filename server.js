@@ -19,7 +19,7 @@ db.on('error', (err) => console.log(err));
 db.once('open', async () => {
     console.log("Connected to database.");
     manager = new DuelManager();
-    await DuelManager.changeDuelState("632bbea40d58880cf56884c9", "ONGOING");
+    // await DuelManager.changeDuelState("632bbea40d58880cf56884c9", "ONGOING");
 });
 
 app.use(cors({ origin: `http://localhost:3000` }));
