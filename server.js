@@ -22,7 +22,7 @@ db.once('open', async () => {
     // await DuelManager.changeDuelState("632bbea40d58880cf56884c9", "ONGOING");
 });
 
-app.use(cors({ origin: `http://localhost:3000` }));
+app.use(cors({ origin: `https://cpduels.onrender.com` }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/duel', duelsRouter);

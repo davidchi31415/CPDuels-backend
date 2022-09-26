@@ -4,7 +4,7 @@ import DuelManager from './duelManager.js';
 
 dotenv.config();
 
-const io = new Server(process.env.WEBSOCKET_PORT, { cors: { origin: "http://localhost:3000" } });
+const io = new Server(process.env.WEBSOCKET_PORT, { cors: { origin: "https://cpduels.onrender.com" } });
 
 async function getTimeLeft(startTime, maxTime, interval, roomId, io) {
     const curTime = new Date();
