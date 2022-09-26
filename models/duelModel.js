@@ -8,6 +8,20 @@ const duelSchema = mongoose.Schema({
     required: true,
     default: ["Guest", "Guest"]
   },
+  scores: {
+    type: [{
+      type: Number
+    }],
+    required: true,
+    default: [0, 0]
+  },
+  problems: {
+    type: [{
+      type: String // id for problem - lookup in database
+    }],
+    required: true,
+    default: []
+  },
   ratingMin: {
     type: Number,
     required: true
