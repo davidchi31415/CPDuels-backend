@@ -7,7 +7,7 @@ import DuelManager from './utils/duelManager.js';
 
 const app = express();
 
-const PORT = process.env.PORT || 3030;
+const PORT = process.env.PORT || 3000;
 const DATABASE_URL = process.env.DATABASE_URL || "mongodb+srv://CPDuels:wrongfulphrasenimblemonumentshindigcardstockvastlyappraisalcloaktremor@cpduels.s78kdcw.mongodb.net/?retryWrites=true&w=majority";
 
 mongoose.connect(DATABASE_URL);
