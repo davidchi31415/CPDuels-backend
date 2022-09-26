@@ -27,6 +27,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/duel', duelsRouter);
 app.use('/problem', problemsRouter);
 
-http.listen(PORT, () => console.log("Server is started."));
+app.listen(PORT, () => console.log("Server is started."));
 
 export default db;
