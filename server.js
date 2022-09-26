@@ -5,13 +5,12 @@ import duelsRouter from './routes/duelsRouter.js';
 import problemsRouter from './routes/problemsRouter.js';
 import DuelManager from './utils/duelManager.js';
 
-// ENVIRONMENT VARIABLES
-import dotenv from 'dotenv';
-dotenv.config();
-
 const app = express();
 
-mongoose.connect(process.env.DATABASE_URL);
+const PORT = process.env.PORT || 3030;
+const DATABASE_URL = process.env.DATABASE_URL || "mongodb+srv://CPDuels:wrongfulphrasenimblemonumentshindigcardstockvastlyappraisalcloaktremor@cpduels.s78kdcw.mongodb.net/?retryWrites=true&w=majority";
+
+mongoose.connect(DATABASE_URL);
 const db = mongoose.connection;
 
 let manager;
@@ -28,6 +27,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/duel', duelsRouter);
 app.use('/problem', problemsRouter);
 
-app.listen(process.env.BACKEND_PORT, () => console.log("Server is started."));
+app.listen(PORT, () => console.log("Server is started."));
 
 export default db;
