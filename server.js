@@ -4,6 +4,7 @@ import cors from 'cors';
 import duelsRouter from './routes/duelsRouter.js';
 import problemsRouter from './routes/problemsRouter.js';
 import DuelManager from './utils/duelManager.js';
+import { Server } from 'socket.io';
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/duel', duelsRouter);
 app.use('/problem', problemsRouter);
 
-app.listen(PORT, () => console.log("Server is started."));
+const server = app.listen(PORT, () => console.log("Server is started."));
+const socket = new Server(server);
 
 export default db;
