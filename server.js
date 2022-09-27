@@ -26,7 +26,7 @@ db.once('open', async () => {
     // await DuelManager.changeDuelState("632bbea40d58880cf56884c9", "ONGOING");
 });
 
-app.use(cors({ origin: ['https://cpduels.onrender.com', 'https://cpduels.com'] }));
+app.use(cors({ origin: ['https://cpduels.onrender.com', 'https://cpduels.com', 'https://www.cpduels.com'] }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/duel', duelsRouter);
@@ -35,7 +35,7 @@ app.use('/problem', problemsRouter);
 const server = app.listen(PORT, () => console.log("Server is started."));
 const io = new Server(server, {
     cors: {
-        origin: ['https://cpduels.onrender.com', 'https://cpduels.com']
+        origin: ['https://cpduels.onrender.com', 'https://cpduels.com', 'https://www.cpduels.com']
     }
 });
 
