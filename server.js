@@ -5,6 +5,10 @@ import duelsRouter from './routes/duelsRouter.js';
 import problemsRouter from './routes/problemsRouter.js';
 import DuelManager from './utils/duelManager.js';
 import { Server } from 'socket.io';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 
@@ -30,5 +34,9 @@ app.use('/problem', problemsRouter);
 
 const server = app.listen(PORT, () => console.log("Server is started."));
 const socket = new Server(server);
+
+app.get('/socket.io/socket.io.js', (req, res) => {
+    res.sendFile(__dirname + '/node_modules/socket.io/client-dist/socket.io.js');
+});
 
 export default db;
