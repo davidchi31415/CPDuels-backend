@@ -35,7 +35,7 @@ app.use('/problem', problemsRouter);
 const server = app.listen(PORT, () => console.log("Server is started."));
 const io = new Server(server, {
     cors: {
-        origin: 'https://www.cpduels.com'
+        origin: '*'
     }
 });
 
