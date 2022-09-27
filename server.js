@@ -33,10 +33,11 @@ app.use('/duel', duelsRouter);
 app.use('/problem', problemsRouter);
 
 const server = app.listen(PORT, () => console.log("Server is started."));
-const io = new Server(server, cors({
+const io = new Server(server, {
+    cors: {
         origin: 'https://www.cpduels.com'
     }
-));
+});
 
 app.get('/socket.io/socket.io.js', (req, res) => {
     res.sendFile(__dirname + '/node_modules/socket.io/client-dist/socket.io.js');
