@@ -1,12 +1,7 @@
 import db from "../server.js";
-import io from './socket.js';
 import { ObjectId } from "mongodb";
 
 class DuelManager {
-    constructor() {
-        this.socket = io;
-    }
-
     static async findProblems(filter={}, fields={}) {
         // filter for the problems we're looking for
         // fields for the parts of the problems

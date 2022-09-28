@@ -1,18 +1,18 @@
 import express from 'express';
 import mongoose from 'mongoose';
-import cors from 'cors';
 import duelsRouter from './routes/duelsRouter.js';
 import problemsRouter from './routes/problemsRouter.js';
 import DuelManager from './utils/duelManager.js';
 import { Server } from 'socket.io';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
+import allowedOrigins from './config/origins.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 const DATABASE_URL = process.env.DATABASE_URL || "mongodb+srv://CPDuels:wrongfulphrasenimblemonumentshindigcardstockvastlyappraisalcloaktremor@cpduels.s78kdcw.mongodb.net/?retryWrites=true&w=majority";
 
 mongoose.connect(DATABASE_URL);
@@ -20,15 +20,11 @@ const db = mongoose.connection;
 
 let manager;
 db.on('error', (err) => console.log(err));
-db.once('open', async () => {
-    console.log("Connected to database.");
-    manager = new DuelManager();
-    // await DuelManager.changeDuelState("632bbea40d58880cf56884c9", "ONGOING");
-});
+db.once('open', async () => console.log("Connected to database."));
 
 app.use(function (req, res, next) {
-    var allowedDomains = ['http://cpduels.onrender.com','http://www.cpduels.com' ];
-    var origin = req.headers.origin;
+    const allowedDomains = allowedOrigins;
+    const origin = req.headers.origin;
     if(allowedDomains.indexOf(origin) > -1){
       res.setHeader('Access-Control-Allow-Origin', origin);
     }
@@ -47,7 +43,7 @@ app.use('/problem', problemsRouter);
 const server = app.listen(PORT, () => console.log("Server is started."));
 const io = new Server(server, {
     cors: {
-        origin: ['https://cpduels.onrender.com:*', 'https://www.cpduels.com:*']
+        origin: allowedOrigins
     }
 });
 
@@ -86,7 +82,7 @@ io.on('connection', async (socket) => {
             let interval = setInterval(async () => {
                 let timeLeft = await getTimeLeft(startTime, maxTime, interval, roomId, io);
                 io.emit('time-left', {roomId: roomId, timeLeft: timeLeft});
-            }, 500);
+            }, 1000);
         }
     });
 });
