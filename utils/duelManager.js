@@ -1,12 +1,19 @@
 import db from "../server.js";
 import CodeforcesAPI from "./codeforcesAPI.js";
+<<<<<<< HEAD
+=======
+import mongoose from "mongoose";
+>>>>>>> 2af80d563b7f9ef33fdea60107ffdc03284c8f3d
 import { ObjectId } from "mongodb";
+
 
 class DuelManager {
     static async findProblems(filter={}, fields={}) {
         // filter for the problems we're looking for
         // fields for the parts of the problems
+        
         let result = await db.collection('problems').find(filter, fields).toArray();
+
         return result;
     }
 
@@ -65,7 +72,10 @@ class DuelManager {
         }
         return false;
     }
+<<<<<<< HEAD
     
+=======
+>>>>>>> 2af80d563b7f9ef33fdea60107ffdc03284c8f3d
 }
 
 export default DuelManager;
