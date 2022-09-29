@@ -70,13 +70,23 @@ async function getTimeLeft(startTime, maxTime, interval, roomId, io) {
 }
 
 io.on('connection', async (socket) => {
+
     socket.on('join', (roomId) => {
         socket.join(roomId);
     });
+    socket.on('join-duel', async ({ roomId, handle, uid }) => {
+        let duelState = await DuelManager.getDuelState(roomId);
+        if (duelState === 'WAITING') {
+            console.log(handle + " is Joining Duel " + roomId);
+            await DuelManager.addDuelPlayer(roomId, handle, uid);
+            await DuelManager.changeDuelState(roomId, "READY");
+            io.emit('status-change', {roomId: roomId, newStatus: "READY"});
+        }
+    })
     socket.on('start-duel', async ({ roomId }) => {
         console.log('Timer Starting');
         let duelState = await DuelManager.getDuelState(roomId);
-        if (duelState === 'WAITING') {
+        if (duelState === 'READY') {
             let duel = await DuelManager.findDuel(roomId);
             let timeLimit = duel.timeLimit;
             const startTime = new Date();
@@ -94,9 +104,3 @@ io.on('connection', async (socket) => {
 });
 
 export default db;
-
-let result = await TaskManager.filterProblemsbyHandleandRating(['davidchi', 'cherrytree1324'], 800, 1200);
-console.log(result.length);
-
-let another_result = await TaskManager.getDuelProblems(5, ['davidchi', 'apgpsoop'], 800, 1200);
-console.log(another_result);

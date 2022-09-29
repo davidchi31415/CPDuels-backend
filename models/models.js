@@ -45,6 +45,10 @@ const playerSchema = mongoose.Schema({
     type: String,
     required: true,
     default: "Guest"
+  },
+  uid: {
+    type: String,
+    required: true
   }
 });
 
@@ -85,7 +89,7 @@ const duelSchema = mongoose.Schema({
   status: {
     type: String,
     required: true,
-    default: "WAITING" // ONGOING, FINISHED
+    default: "WAITING" // READY, ONGOING, FINISHED
   },
   playerOneScore: {
     type: Number,

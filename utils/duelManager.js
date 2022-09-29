@@ -52,6 +52,22 @@ class DuelManager {
         );
     }
 
+    static async addDuelPlayer(id, handle, uid) {
+        await db.collection('duels').findOneAndUpdate(
+            {
+                _id: ObjectId(id)
+            },
+            {
+                $push: {
+                    players: {
+                        handle: handle,
+                        uid: uid
+                    }
+                }
+            }
+        );
+    }
+
     static async isUserSubmissionOK(handle, contestId, index, name) {
         let submissions = await CodeforcesAPI.get_user_submissions(handle);
         var filteredSubmissions;
