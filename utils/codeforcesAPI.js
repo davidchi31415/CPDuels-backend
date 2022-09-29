@@ -42,11 +42,12 @@ class CodeforcesAPI {
   
     static async get_user_submissions(handle) {
       const url = `https://codeforces.com/api/user.status?handle=${handle}`;
+      console.log(url);
       const response = await this.api_response(url);
       if (!response) return [false, "CF API Error"];
       if (response.status !== 'OK') return [false, response.comment];
+      let data = [];
       try {
-        let data = [];
         response.result.forEach((submission) => {
           let problem = submission.problem;
           if (!problem.hasOwnProperty('rating')) return;
@@ -60,11 +61,11 @@ class CodeforcesAPI {
             creationTimeSeconds: submission.creationTimeSeconds,
             verdict: submission.verdict
           });
-          return [true, data];        
         });
       } catch (e) {
-        return [false, e.message];
+        console.log("Getting User Submissions FAILED");
       }
+      return data;
     }
   
     static async get_contest_list() {

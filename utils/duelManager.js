@@ -1,4 +1,5 @@
 import db from "../server.js";
+import CodeforcesAPI from "./codeforcesAPI.js";
 import { ObjectId } from "mongodb";
 
 class DuelManager {
@@ -46,6 +47,25 @@ class DuelManager {
             }
         );
     }
+
+    static async isUserSubmissionOK(handle, contestId, index, name) {
+        let submissions = await CodeforcesAPI.get_user_submissions(handle);
+        var filteredSubmissions;
+        if (submissions.length != 0) {
+            filteredSubmissions = submissions.filter(function (sub) {
+                return sub.contestId == contestId &&
+                       sub.index == index &&
+                       sub.name == name &&
+                       sub.verdict == 'OK'
+            });
+        }
+        console.log(filteredSubmissions);
+        if (filteredSubmissions.length != 0) {
+            return true;
+        }
+        return false;
+    }
+    
 }
 
 export default DuelManager;

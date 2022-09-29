@@ -1,5 +1,5 @@
 import express from 'express';
-import duelModel from '../models/duelModel.js';
+import duelModel from '../models/models.js';
 
 const duelsRouter = express.Router();
 

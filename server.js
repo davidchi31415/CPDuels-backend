@@ -21,7 +21,7 @@ const db = mongoose.connection;
 let manager;
 db.on('error', (err) => console.log(err));
 db.once('open', async () => console.log("Connected to database."));
-
+let sumbissions = await DuelManager.isUserSubmissionOK("davidchi",1712,'C','Sort Zero');
 app.use(function (req, res, next) {
     const allowedDomains = allowedOrigins;
     const origin = req.headers.origin;
@@ -37,8 +37,8 @@ app.use(function (req, res, next) {
 });
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/duel', duelsRouter);
-app.use('/problem', problemsRouter);
+app.use('/duels', duelsRouter);
+app.use('/problems', problemsRouter);
 
 const server = app.listen(PORT, () => console.log("Server is started."));
 const io = new Server(server, {

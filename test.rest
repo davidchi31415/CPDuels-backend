@@ -1,1 +1,5 @@
-DELETE http://localhost:8080/duel
+DELETE http://localhost:8080/duels
+
+###
+
+GET http://localhost:8080/duels
