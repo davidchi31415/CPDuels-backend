@@ -18,6 +18,8 @@ const DATABASE_URL = process.env.DATABASE_URL || "mongodb+srv://CPDuels:wrongful
 
 mongoose.connect(DATABASE_URL);
 const db = mongoose.connection;
+db.on('error', (err) => console.log(err));
+db.once('open', async () => console.log("Connected to database."));
 while(mongoose.connection.readyState != 1) {
     function sleep(ms) {
         return new Promise((resolve) => {
@@ -26,10 +28,6 @@ while(mongoose.connection.readyState != 1) {
     }
     await sleep(1000);
 }
-let manager;
-db.on('error', (err) => console.log(err));
-db.once('open', async () => console.log("Connected to database."));
-let sumbissions = await DuelManager.isUserSubmissionOK("davidchi",1712,'C','Sort Zero');
 app.use(function (req, res, next) {
     const allowedDomains = allowedOrigins;
     const origin = req.headers.origin;
