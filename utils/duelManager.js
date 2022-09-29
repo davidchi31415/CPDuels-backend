@@ -59,7 +59,6 @@ class DuelManager {
             filteredSubmissions = submissions.filter(function (sub) {
                 return sub.contestId == contestId &&
                        sub.index == index &&
-                       sub.name == name &&
                        sub.verdict == 'OK'
             });
         }

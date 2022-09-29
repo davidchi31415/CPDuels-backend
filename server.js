@@ -7,7 +7,7 @@ import { Server } from 'socket.io';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import allowedOrigins from './config/origins.js';
-import TaskManager from './utils/tasks.js';
+import TaskManager from './utils/taskManager.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -73,7 +73,7 @@ io.on('connection', async (socket) => {
     socket.on('join', (roomId) => {
         socket.join(roomId);
     });
-    socket.on('start-timer', async ({ roomId }) => {
+    socket.on('start-duel', async ({ roomId }) => {
         console.log('Timer Starting');
         let duelState = await DuelManager.getDuelState(roomId);
         if (duelState === 'WAITING') {
@@ -94,3 +94,9 @@ io.on('connection', async (socket) => {
 });
 
 export default db;
+
+let result = await TaskManager.filterProblemsbyHandleandRating(['davidchi', 'cherrytree1324'], 800, 1200);
+console.log(result.length);
+
+let another_result = await TaskManager.getDuelProblems(5, ['davidchi', 'apgpsoop'], 800, 1200);
+console.log(another_result);
