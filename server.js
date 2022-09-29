@@ -7,6 +7,7 @@ import { Server } from 'socket.io';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import allowedOrigins from './config/origins.js';
+import TaskManager from './utils/tasks.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -17,7 +18,14 @@ const DATABASE_URL = process.env.DATABASE_URL || "mongodb+srv://CPDuels:wrongful
 
 mongoose.connect(DATABASE_URL);
 const db = mongoose.connection;
-
+while(mongoose.connection.readyState != 1) {
+    function sleep(ms) {
+        return new Promise((resolve) => {
+            setTimeout(resolve, ms);
+        });
+    }
+    await sleep(1000);
+}
 let manager;
 db.on('error', (err) => console.log(err));
 db.once('open', async () => console.log("Connected to database."));
@@ -88,3 +96,6 @@ io.on('connection', async (socket) => {
 });
 
 export default db;
+
+let resut = await TaskManager.filterProblems(1800,2000);
+console.log(resut);

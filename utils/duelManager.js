@@ -1,11 +1,16 @@
 import db from "../server.js";
+import CodeforcesAPI from "./codeforcesAPI.js";
+import mongoose from "mongoose";
 import { ObjectId } from "mongodb";
+
 
 class DuelManager {
     static async findProblems(filter={}, fields={}) {
         // filter for the problems we're looking for
         // fields for the parts of the problems
+        
         let result = await db.collection('problems').find(filter, fields).toArray();
+
         return result;
     }
 
@@ -45,6 +50,24 @@ class DuelManager {
                 }
             }
         );
+    }
+
+    static async isUserSubmissionOK(handle, contestId, index, name) {
+        let submissions = await CodeforcesAPI.get_user_submissions(handle);
+        var filteredSubmissions;
+        if (submissions.length != 0) {
+            filteredSubmissions = submissions.filter(function (sub) {
+                return sub.contestId == contestId &&
+                       sub.index == index &&
+                       sub.name == name &&
+                       sub.verdict == 'OK'
+            });
+        }
+        console.log(filteredSubmissions);
+        if (filteredSubmissions.length != 0) {
+            return true;
+        }
+        return false;
     }
 }
 
