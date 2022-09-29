@@ -96,6 +96,3 @@ io.on('connection', async (socket) => {
 });
 
 export default db;
-
-let resut = await TaskManager.filterProblems(1800,2000);
-console.log(resut);
