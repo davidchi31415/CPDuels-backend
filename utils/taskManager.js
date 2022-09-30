@@ -14,7 +14,7 @@ class TaskManager {
         return result;
     }
 
-    static async filterProblemsbyHandleandRating(handles,ratingMin,ratingMax) {
+    static async filterProblemsbyHandlesAndRating(handles,ratingMin,ratingMax) {
         let ratedProblems = await this.filterProblemsbyRating(ratingMin,ratingMax);
         let submissions1 = await CodeforcesAPI.get_user_submissions(handles[0]);
         let submissions2 = await CodeforcesAPI.get_user_submissions(handles[1]);
@@ -33,7 +33,7 @@ class TaskManager {
     }
 
     static async getDuelProblems(numProblems,handles,ratingMin,ratingMax) {
-        let problems = await this.filterProblemsbyHandleandRating(handles,ratingMin,ratingMax);
+        let problems = await this.filterProblemsbyHandlesAndRating(handles,ratingMin,ratingMax);
         let problemSet = problems.sort(() => 0.5 - Math.random());
         return problemSet.slice(0,numProblems);
     }

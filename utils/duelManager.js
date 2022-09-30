@@ -2,6 +2,7 @@ import db from "../server.js";
 import CodeforcesAPI from "./codeforcesAPI.js";
 import mongoose from "mongoose";
 import { ObjectId } from "mongodb";
+import TaskManager from "./taskManager.js";
 
 
 class DuelManager {
@@ -63,6 +64,22 @@ class DuelManager {
                         handle: handle,
                         uid: uid
                     }
+                }
+            }
+        );
+    }
+
+    static async addProblems(id) {
+        let duel = await this.findDuel(id);
+        let handles = [duel.players[0].handle, duel.players[1].handle]
+        let problems = await TaskManager.getDuelProblems(duel.problemCount, handles, duel.ratingMin, duel.ratingMax);
+        await db.collection('duels').findOneAndUpdate(
+            {
+                _id: ObjectId(id)
+            },
+            {
+                $set: {
+                    problems: problems
                 }
             }
         );

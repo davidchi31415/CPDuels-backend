@@ -99,11 +99,17 @@ io.on('connection', async (socket) => {
             await DuelManager.changeDuelState(roomId, "ONGOING");
             io.emit('status-change', {roomId: roomId, newStatus: "ONGOING"});
             console.log('Yo here we go again');
+
+            await DuelManager.addProblems(roomId);
+            io.emit('problem-change', {roomId: roomId});
             io.emit('time-left', {roomId: roomId, timeLeft: timeLimit * 60});
-            let interval = setInterval(async () => {
-                let timeLeft = await getTimeLeft(startTime, maxTime, interval, roomId, io);
+            let timeInterval = setInterval(async () => {
+                let timeLeft = await getTimeLeft(startTime, maxTime, timeInterval, roomId, io);
                 io.emit('time-left', {roomId: roomId, timeLeft: timeLeft});
             }, 1000);
+            let checkInterval = setInterval(async () => {
+                
+            }, 3000);
         }
     });
 });
