@@ -84,6 +84,18 @@ class DuelManager {
         }
         return false;
     }
+
+    static async isValidDuel(handle,ratingMin,ratingMax) {
+        let validHandle = await CodeforcesAPI.check_handle(handle);
+        if (!validHandle[0]) {
+            return [false, "Invalid Handle"];
+        }
+        let validRatings = (ratingMin < ratingMax);
+        if (!validRatings) {
+            return [false, "Invalid Ratings"];
+        }
+        return true;
+    }
     
 }
 

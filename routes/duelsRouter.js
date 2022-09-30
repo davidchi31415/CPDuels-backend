@@ -1,5 +1,6 @@
 import express from 'express';
 import duelModel from '../models/models.js';
+import DuelManager from '../utils/duelManager.js';
 
 const duelsRouter = express.Router();
 
@@ -21,6 +22,8 @@ duelsRouter.get('/:id', getDuel, (req, res) => {
 // POST one duel
 duelsRouter.post('/add', async (req, res) => {
   const duel = new duelModel(req.body);
+  let validDuel = await DuelManager.isValidDuel(req.body.handle,req.body.ratingMin,req.body.ratingMax);
+  console.log(validDuel);
   try {
     const newDuel = await duel.save();
     res.status(201).json(newDuel);
