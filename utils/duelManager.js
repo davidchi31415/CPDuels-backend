@@ -85,16 +85,40 @@ class DuelManager {
         return false;
     }
 
-    static async isValidDuel(handle,ratingMin,ratingMax) {
+    static async isValidJoinRequest(id, handle) {
+        let duel = await this.findDuel(id);
+        if (duel.players.length === 2) { // handle multiple players joining at once
+            return [false, "Duel Full"];
+        }
+        let owner = duel.players[0];
+        if (owner.handle === handle) {
+            return [false, "Duplicate Handles"];
+        }
         let validHandle = await CodeforcesAPI.check_handle(handle);
         if (!validHandle[0]) {
             return [false, "Invalid Handle"];
         }
-        let validRatings = (ratingMin < ratingMax);
+        return [true];
+    }
+
+    static async isValidDuelRequest(handle, problemCount, ratingMin, ratingMax, timeLimit) {
+        let validHandle = await CodeforcesAPI.check_handle(handle);
+        if (!validHandle[0]) {
+            return [false, "Invalid Handle"];
+        }
+        let validProblemCount = problemCount && (problemCount >= 1 && problemCount <= 10);
+        if (!validProblemCount) {
+            return [false, "Invalid Problem Count"];
+        }
+        let validRatings = (ratingMin && ratingMax) && (ratingMin <= ratingMax) && (ratingMin >= 800 && ratingMax <= 3000);
         if (!validRatings) {
             return [false, "Invalid Ratings"];
         }
-        return true;
+        let validTimeLimit = timeLimit && (timeLimit >= 10 && timeLimit <= 180);
+        if (!validTimeLimit) {
+            return [false, "Invalid Time Limit"];
+        }
+        return [true];
     }
     
 }

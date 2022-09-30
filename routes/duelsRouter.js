@@ -22,11 +22,17 @@ duelsRouter.get('/:id', getDuel, (req, res) => {
 // POST one duel
 duelsRouter.post('/add', async (req, res) => {
   const duel = new duelModel(req.body);
-  let validDuel = await DuelManager.isValidDuel(req.body.handle,req.body.ratingMin,req.body.ratingMax);
+  let validDuel = await DuelManager.isValidDuelRequest(
+    req.body.handle, req.body.problemCount, req.body.ratingMin, req.body.ratingMax, req.body.timeLimit
+  );
   console.log(validDuel);
   try {
-    const newDuel = await duel.save();
-    res.status(201).json(newDuel);
+    if (validDuel[0]) {
+      const newDuel = await duel.save();
+      res.status(201).json(newDuel);  
+    } else {
+      res.status(400).json({ message: validDuel[1] });
+    }
   } catch (err) {
     res.status(400).json({ message: err.message });
   }

@@ -77,10 +77,15 @@ io.on('connection', async (socket) => {
     socket.on('join-duel', async ({ roomId, handle, uid }) => {
         let duelState = await DuelManager.getDuelState(roomId);
         if (duelState === 'WAITING') {
-            console.log(handle + " is Joining Duel " + roomId);
-            await DuelManager.addDuelPlayer(roomId, handle, uid);
-            await DuelManager.changeDuelState(roomId, "READY");
-            io.emit('status-change', {roomId: roomId, newStatus: "READY"});
+            console.log(handle + " Wants to Join Duel " + roomId);
+            let validJoin = await DuelManager.isValidJoinRequest(roomId, handle);
+            if (validJoin[0]) {
+                await DuelManager.addDuelPlayer(roomId, handle, uid);
+                await DuelManager.changeDuelState(roomId, "READY");
+                io.emit('status-change', {roomId: roomId, newStatus: "READY"});
+            } else {
+                io.to(socket.id).emit('error-message', validJoin[1]);
+            }
         }
     })
     socket.on('start-duel', async ({ roomId }) => {
