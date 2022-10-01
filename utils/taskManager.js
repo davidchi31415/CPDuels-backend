@@ -3,8 +3,8 @@ import DuelManager from "./duelManager.js";
 import db from "../server.js";
 
 class TaskManager {
-    static async update_problemset() {
-        let problem_list = await CodeforcesAPI.get_problem_list();
+    static async updateProblemset() {
+        let problem_list = await CodeforcesAPI.getProblemList();
         console.log(problem_list);
         db.collection('cfproblems').insertMany(problem_list);
     }
@@ -26,8 +26,8 @@ class TaskManager {
 
     static async filterProblemsbyHandlesAndRating(handles,ratingMin,ratingMax) {
         let ratedProblems = await this.filterProblemsbyRating(ratingMin,ratingMax);
-        let submissions1 = await CodeforcesAPI.get_user_submissions(handles[0]);
-        let submissions2 = await CodeforcesAPI.get_user_submissions(handles[1]);
+        let submissions1 = await CodeforcesAPI.getUserSubmissions(handles[0]);
+        let submissions2 = await CodeforcesAPI.getUserSubmissions(handles[1]);
         let combined_submissions = submissions1.concat(submissions2.filter((item) => submissions1.indexOf(item) < 0));
 
         //contestId index 

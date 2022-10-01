@@ -141,6 +141,16 @@ const duelSchema = mongoose.Schema({
     required: true,
     default: 0
   },
+  playerOneSolves: {
+    type: Number,
+    required: true,
+    default: 0
+  },
+  playerTwoSolves: {
+    type: Number,
+    required: true,
+    default: 0
+  },
   result: {
     type: [{
       type: String,

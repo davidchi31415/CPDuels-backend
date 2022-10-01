@@ -44,7 +44,7 @@ class CodeforcesAPI {
       return [true, response.result[0]];
     }
   
-    static async get_user_submissions(handle) {
+    static async getUserSubmissions(handle) {
       const url = `https://codeforces.com/api/user.status?handle=${handle}`;
       console.log(url);
       const response = await this.api_response(url);
@@ -105,7 +105,7 @@ class CodeforcesAPI {
       return data;
     }
     
-    static async get_contest_list() {
+    static async getContestList() {
       const url = "https://codeforces.com/api/contest.list";
       const response = await this.api_response(url);
       if (!response) {
@@ -114,7 +114,7 @@ class CodeforcesAPI {
       return response['result'];
     }
   
-    static async get_problem_list() {
+    static async getProblemList() {
       const url = "https://codeforces.com/api/problemset.problems";
       const response = await this.api_response(url);
       if (!response) {

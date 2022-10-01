@@ -92,11 +92,20 @@ io.on('connection', async (socket) => {
             io.emit('status-change', {roomId: roomId, newStatus: "ONGOING"});
             io.emit('problem-change', {roomId: roomId});
             io.emit('time-left', {roomId: roomId, timeLeft: timeLimit * 60});
+            
+            let timeInterval; let checkInterval;
 
-            let checkInterval = setInterval(async () => {
+            checkInterval = setInterval(async () => {
                 await DuelManager.checkProblemSolves(roomId);
+                let duel = await DuelManager.findDuel(roomId);
+                if (duel.playerOneSolves === duel.problems.length || duel.playerTwoSolves === duel.problems.length) {
+                    if (timeInterval) clearInterval(timeInterval);
+                    if (checkInterval) clearInterval(checkInterval);
+                    await DuelManager.finishDuel(roomId);
+                    io.emit('status-change', {roomId: roomId, newStatus: "FINISHED"});
+                }
             }, 3000);
-            let timeInterval = setInterval(async () => {
+            timeInterval = setInterval(async () => {
                 let timeLeft = await getTimeLeft(startTime, maxTime, timeInterval, checkInterval, roomId, io);
                 io.emit('time-left', {roomId: roomId, timeLeft: timeLeft});
             }, 1000);

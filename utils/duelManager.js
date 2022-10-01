@@ -200,9 +200,12 @@ class DuelManager {
     static async updateDuelScores(id) {
         let duel = await this.findDuel(id);
         let playerOneScore = 0; let playerTwoScore = 0;
+        let playerOneSolves = 0; let playerTwoSolves = 0;
         for (let i = 0; i < duel.problems.length; i++) {
             playerOneScore += duel.problems[i].playerOneScore;
             playerTwoScore += duel.problems[i].playerTwoScore;
+            if (duel.problems[i].playerOneScore) playerOneSolves++;
+            if (duel.problems[i].playerTwoScore) playerTwoSolves++;
         }
         await db.collection('duels').findOneAndUpdate(
             {
@@ -211,7 +214,9 @@ class DuelManager {
             {
                 $set: {
                     playerOneScore: playerOneScore,
-                    playerTwoScore: playerTwoScore
+                    playerTwoScore: playerTwoScore,
+                    playerOneSolves: playerOneSolves,
+                    playerTwoSolves: playerTwoSolves,
                 }
             }
         );
