@@ -28,8 +28,11 @@ while(mongoose.connection.readyState != 1) {
 }
 
 var corsOptions = {
-    origin: '*',
-    optionsSuccessStatus: 200,
+    allowedHeaders: ["authorization", "Content-Type"], // you can change the headers
+    exposedHeaders: ["authorization"], // you can change the headers
+    origin: "https://www.cpduels.com",
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    preflightContinue: false
   }
 app.use(cors(corsOptions));
 app.use(express.json());
