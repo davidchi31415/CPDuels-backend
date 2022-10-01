@@ -35,7 +35,7 @@ var corsOptions = {
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     preflightContinue: false
   }
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/duels', duelsRouter);
@@ -44,7 +44,8 @@ app.use('/cfproblems', cfproblemsRouter);
 const server = app.listen(PORT, () => console.log(`Server is started on port ${PORT}.`));
 const io = new Server(server, {
     cors: {
-        origin: '*'
+        origin: '*',
+        methods: ["GET","POST"]
     }
 });
 
