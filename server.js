@@ -43,7 +43,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/duels', duelsRouter);
 app.use('/cfproblems', cfproblemsRouter);
 
-const server = app.listen(PORT, () => console.log("Server is started."));
+const server = app.listen(PORT, () => console.log(`Server is started on port ${PORT}.`));
 const io = new Server(server, {
     cors: {
         origin: allowedOrigins
