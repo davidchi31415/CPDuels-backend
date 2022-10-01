@@ -235,22 +235,22 @@ class DuelManager {
     }
 
     static async isValidDuelRequest(players, problemCount, ratingMin, ratingMax, timeLimit) {
-        // let validHandle = await CodeforcesAPI.check_handle(players[0].handle);
-        // if (!validHandle[0]) {
-        //     return [false, "Invalid Handle"];
-        // }
-        // let validProblemCount = problemCount && (problemCount >= 1 && problemCount <= 10);
-        // if (!validProblemCount) {
-        //     return [false, "Invalid Problem Count"];
-        // }
-        // let validRatings = (ratingMin && ratingMax) && (ratingMin <= ratingMax) && (ratingMin >= 800 && ratingMax <= 3000);
-        // if (!validRatings) {
-        //     return [false, "Invalid Ratings"];
-        // }
-        // let validTimeLimit = timeLimit && (timeLimit >= 10 && timeLimit <= 180);
-        // if (!validTimeLimit) {
-        //     return [false, "Invalid Time Limit"];
-        // }
+        let validHandle = await CodeforcesAPI.check_handle(players[0].handle);
+        if (!validHandle[0]) {
+            return [false, "Invalid Handle"];
+        }
+        let validProblemCount = problemCount && (problemCount >= 1 && problemCount <= 10);
+        if (!validProblemCount) {
+            return [false, "Invalid Problem Count"];
+        }
+        let validRatings = (ratingMin && ratingMax) && (ratingMin <= ratingMax) && (ratingMin >= 800 && ratingMax <= 3000);
+        if (!validRatings) {
+            return [false, "Invalid Ratings"];
+        }
+        let validTimeLimit = timeLimit && (timeLimit >= 10 && timeLimit <= 180);
+        if (!validTimeLimit) {
+            return [false, "Invalid Time Limit"];
+        }
         return [true];
     }
     
