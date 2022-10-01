@@ -9,6 +9,7 @@ import { fileURLToPath } from 'url';
 import allowedOrigins from './config/origins.js';
 import TaskManager from './utils/taskManager.js';
 import { sleep } from './utils/helpers.js';
+import cors from 'cors';
 import CodeforcesAPI from './utils/codeforcesAPI.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -25,19 +26,10 @@ db.once('open', async () => console.log("Connected to database."));
 while(mongoose.connection.readyState != 1) {
     await sleep(1000);
 }
-app.use(function (req, res, next) {
-    const allowedDomains = allowedOrigins;
-    const origin = req.headers.origin;
-    if(allowedDomains.indexOf(origin) > -1){
-      res.setHeader('Access-Control-Allow-Origin', origin);
-    }
-  
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type, Accept');
-    res.setHeader('Access-Control-Allow-Credentials', true);
-  
-    next();
-});
+
+app.use(cors({
+    origin: allowedOrigins
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/duels', duelsRouter);
