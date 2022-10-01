@@ -48,15 +48,9 @@ class TaskManager {
         return problemSet.slice(0,numProblems);
     }
 
-    static async getUserSolves(id, handle, contestId, index, exclude=0) {
-        let submissions = await CodeforcesAPI.get_user_submissions(handle);
-        let duel = await DuelManager.findDuel(id);
-        if (submissions) {
-            let filteredSubmissions = submissions.slice(0, submissions.length-exclude).filter(function (submission) {
-                return submission.contestId === contestId &&
-                       submission.index === index &&
-                       submission.creationTimeSeconds > duel.startTime
-            });
+    static async getUserSolves(duel, handle) {
+        let filteredSubmissions = await CodeforcesAPI.getUserSubmissionsAfterTime(handle, duel.startTime);
+        if (filteredSubmissions) {
             console.log(filteredSubmissions);
             return filteredSubmissions.reverse();
         }

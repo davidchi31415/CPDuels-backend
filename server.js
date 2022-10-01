@@ -95,7 +95,7 @@ io.on('connection', async (socket) => {
 
             let checkInterval = setInterval(async () => {
                 await DuelManager.checkProblemSolves(roomId);
-            }, 30000);
+            }, 3000);
             let timeInterval = setInterval(async () => {
                 let timeLeft = await getTimeLeft(startTime, maxTime, timeInterval, checkInterval, roomId, io);
                 io.emit('time-left', {roomId: roomId, timeLeft: timeLeft});
@@ -105,6 +105,3 @@ io.on('connection', async (socket) => {
 });
 
 export default db;
-
-let submissions = await CodeforcesAPI.get_user_submissions('davidchi');
-console.log(submissions.length);

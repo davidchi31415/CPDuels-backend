@@ -19,5 +19,5 @@ Content-Type: "application/json"
   "ratingMin": 1200,
   "ratingMax": 1600,
   "problemCount": 5,
-  "timeLimit": 1,
+  "timeLimit": 10,
 }

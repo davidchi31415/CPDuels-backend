@@ -71,7 +71,40 @@ class CodeforcesAPI {
       }
       return data;
     }
-  
+
+    static async getUserSubmissionsAfterTime(handle, time) {
+      const url = `https://codeforces.com/api/user.status?handle=${handle}`;
+      console.log(url);
+      let time1 = Date.now();
+      const response = await this.api_response(url);
+      console.log(time1 - Date.now());
+      if (!response) return [false, "CF API Error"];
+      if (response.status !== 'OK') return [false, response.comment];
+      let data = [];
+      try {
+        let time2 = Date.now();
+        for (let i = 0; i < response.result.length; i++) {
+          let submission = response.result[i];
+          if (submission.creationTimeSeconds < time) break;
+          if (!submission.hasOwnProperty('verdict')) submission.verdict = null;
+          let problem = submission.problem;
+          data.push({
+            contestId: problem.contestId,
+            index: problem.index,
+            name: problem.name,
+            type: problem.type,
+            rating: problem.rating,
+            creationTimeSeconds: submission.creationTimeSeconds,
+            verdict: submission.verdict
+          });
+        }
+        console.log(Date.now() - time2);
+      } catch (e) {
+        console.log("Getting User Submissions FAILED: " + e);
+      }
+      return data;
+    }
+    
     static async get_contest_list() {
       const url = "https://codeforces.com/api/contest.list";
       const response = await this.api_response(url);
