@@ -1,5 +1,23 @@
-DELETE http://localhost:8080/duels
+DELETE http://localhost:8080/cfproblems
 
 ###
 
 GET http://localhost:8080/duels
+
+###
+
+POST http://localhost:8080/duels/add
+Content-Type: "application/json"
+
+{
+  "players": [
+    {
+      "handle": "davidchi",
+      "uid": "hfisodnlaoiefndkmsl"
+    }
+  ],
+  "ratingMin": 1200,
+  "ratingMax": 1600,
+  "problemCount": 5,
+  "timeLimit": 1,
+}

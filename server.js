@@ -1,13 +1,15 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import duelsRouter from './routes/duelsRouter.js';
-import problemsRouter from './routes/problemsRouter.js';
+import cfproblemsRouter from './routes/cfproblemsRouter.js';
 import DuelManager from './utils/duelManager.js';
 import { Server } from 'socket.io';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import allowedOrigins from './config/origins.js';
 import TaskManager from './utils/taskManager.js';
+import { sleep } from './utils/helpers.js';
+import CodeforcesAPI from './utils/codeforcesAPI.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -21,11 +23,6 @@ const db = mongoose.connection;
 db.on('error', (err) => console.log(err));
 db.once('open', async () => console.log("Connected to database."));
 while(mongoose.connection.readyState != 1) {
-    function sleep(ms) {
-        return new Promise((resolve) => {
-            setTimeout(resolve, ms);
-        });
-    }
     await sleep(1000);
 }
 app.use(function (req, res, next) {
@@ -44,7 +41,7 @@ app.use(function (req, res, next) {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/duels', duelsRouter);
-app.use('/problems', problemsRouter);
+app.use('/cfproblems', cfproblemsRouter);
 
 const server = app.listen(PORT, () => console.log("Server is started."));
 const io = new Server(server, {
@@ -57,12 +54,13 @@ app.get('/socket.io/socket.io.js', (req, res) => {
     res.sendFile(__dirname + '/node_modules/socket.io/client-dist/socket.io.js');
 });
 
-async function getTimeLeft(startTime, maxTime, interval, roomId, io) {
+async function getTimeLeft(startTime, maxTime, timeInterval, checkInterval, roomId, io) {
     const curTime = new Date();
     let timeDifference = Math.abs(curTime.getTime() - startTime.getTime());
     if (timeDifference >= maxTime) {
-      if (interval) clearInterval(interval);
-      await DuelManager.changeDuelState(roomId, "FINISHED");
+      if (timeInterval) clearInterval(timeInterval);
+      if (checkInterval) clearInterval(checkInterval);
+      await DuelManager.finishDuel(roomId);
       io.emit('status-change', {roomId: roomId, newStatus: "FINISHED"});
       return "Time's up.";
     }
@@ -96,22 +94,25 @@ io.on('connection', async (socket) => {
             let timeLimit = duel.timeLimit;
             const startTime = new Date();
             const maxTime = timeLimit * 60000; // minutes to milliseconds
-            await DuelManager.changeDuelState(roomId, "ONGOING");
-            io.emit('status-change', {roomId: roomId, newStatus: "ONGOING"});
-            console.log('Yo here we go again');
+            await DuelManager.startDuel(roomId);
 
-            await DuelManager.addProblems(roomId);
+            console.log('Yo here we go again');
+            io.emit('status-change', {roomId: roomId, newStatus: "ONGOING"});
             io.emit('problem-change', {roomId: roomId});
             io.emit('time-left', {roomId: roomId, timeLeft: timeLimit * 60});
+
+            let checkInterval = setInterval(async () => {
+                await DuelManager.checkProblemSolves(roomId);
+            }, 30000);
             let timeInterval = setInterval(async () => {
-                let timeLeft = await getTimeLeft(startTime, maxTime, timeInterval, roomId, io);
+                let timeLeft = await getTimeLeft(startTime, maxTime, timeInterval, checkInterval, roomId, io);
                 io.emit('time-left', {roomId: roomId, timeLeft: timeLeft});
             }, 1000);
-            let checkInterval = setInterval(async () => {
-                
-            }, 3000);
         }
     });
 });
 
 export default db;
+
+let submissions = await CodeforcesAPI.get_user_submissions('davidchi');
+console.log(submissions.length);

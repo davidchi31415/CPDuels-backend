@@ -1,4 +1,5 @@
 import fetch from "node-fetch";
+import { sleep } from './helpers.js';
 
 class CodeforcesAPI {
     static async api_response(url, params) {
@@ -7,18 +8,21 @@ class CodeforcesAPI {
         let returnObj;
         while (tries < 5) {
           tries++;
-          let responseData;
+          let responseData = {
+            'status':'',
+            'comment':''
+          };
           await fetch(url, params).then(
             async (res) => {
               if (res.status === 503) { // Limit exceeded error
                 responseData.status = "FAILED"; responseData.comment = 'limit exceeded';
-                await new Promise(r => setTimeout(r, 1000));
+                await sleep(1000);
               } else {
                 responseData = await res.json();
               }
             }
           );
-          if (responseData.status === "OK") return responseData;
+          if (responseData?.status === "OK") return responseData;
           returnObj = responseData;
         }
         return returnObj; // Return if fail after 5 tries and not limit exceeded

@@ -1,12 +1,12 @@
 import express from 'express';
-import { problemModel } from '../models/models.js';
+import { cfproblemModel } from '../models/models.js';
 
-const problemsRouter = express.Router();
+const cfproblemsRouter = express.Router();
 
 // GET all problems
-problemsRouter.get('/', async (req, res) => {
+cfproblemsRouter.get('/', async (req, res) => {
   try {
-    const problems = await problemModel.find();
+    const problems = await cfproblemModel.find();
     res.send(problems);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -14,13 +14,13 @@ problemsRouter.get('/', async (req, res) => {
 });
 
 // GET one problem
-problemsRouter.get('/:id', getProblem, (req, res) => {
+cfproblemsRouter.get('/:id', getProblem, (req, res) => {
   res.send(res.problem);
 });
 
 // POST one problem
-problemsRouter.post('/add', async (req, res) => {
-  const problem = new problemModel(req.body);
+cfproblemsRouter.post('/add', async (req, res) => {
+  const problem = new cfproblemModel(req.body);
   try {
     const newProblem = await problem.save();
     res.status(201).json(newProblem);
@@ -30,12 +30,12 @@ problemsRouter.post('/add', async (req, res) => {
 });
 
 // PATCH one problem
-problemsRouter.get('/:id', getProblem, (req, res) => {
+cfproblemsRouter.get('/:id', getProblem, (req, res) => {
 
 });
 
 // DELETE one problem
-problemsRouter.delete('/:id', getProblem, async (req, res) => {
+cfproblemsRouter.delete('/:id', getProblem, async (req, res) => {
   try {
     await res.problem.delete();
     res.json({ message: "Problem deleted." });
@@ -45,9 +45,9 @@ problemsRouter.delete('/:id', getProblem, async (req, res) => {
 });
 
 // DELETE all problems
-problemsRouter.delete('/', async (req, res) => {
+cfproblemsRouter.delete('/', async (req, res) => {
   try {
-    await problemModel.deleteMany();
+    await cfproblemModel.deleteMany();
     res.json({ message: "All problems deleted." });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -57,7 +57,7 @@ problemsRouter.delete('/', async (req, res) => {
 async function getProblem(req, res, next) {
   let problem;
   try {
-    problem = await problemModel.findById(req.params.id);
+    problem = await cfproblemModel.findById(req.params.id);
     // Check for error and immediately return to avoid setting res.subscriber
     if (problem == null) return res.status(404).json({ message: "Problem not found." });
   } catch (err) {
@@ -69,4 +69,4 @@ async function getProblem(req, res, next) {
   next(); 
 }
 
-export default problemsRouter;
+export default cfproblemsRouter;

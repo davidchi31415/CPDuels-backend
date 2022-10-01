@@ -1,5 +1,34 @@
 import mongoose from 'mongoose';
 
+const cfproblemSchema = mongoose.Schema({
+  contestId: {
+    type: Number,
+    required: true
+  },
+  index: {
+    type: String,
+    required: true
+  },
+  name: {
+    type: String,
+    required: true
+  },
+  type: {
+    type: String,
+    required: true,
+    default: "PROGRAMMING"
+  },
+  points: {
+    type: Number
+  },
+  tags: {
+    type: [{
+      type: String
+    }],
+    required: false
+  }
+});
+
 const problemSchema = mongoose.Schema({
   contestId: {
     type: Number,
@@ -20,13 +49,24 @@ const problemSchema = mongoose.Schema({
   },
   points: {
     type: Number,
-    required: true
+    required: true,
+    default: 0
   },
   tags: {
     type: [{
       type: String
     }],
     required: false
+  },
+  playerOneAttempts: {
+    type: Number,
+    required: true,
+    default: 0
+  },
+  playerTwoAttempts: {
+    type: Number,
+    required: true,
+    default: 0
   },
   playerOneScore: {
     type: Number,
@@ -110,10 +150,13 @@ const duelSchema = mongoose.Schema({
       type: String, // Player handle of the winner
       required: false,
     }]
+  },
+  startTime: {
+    type: Number
   }
 });
 
-export const problemModel = mongoose.models.Problem ? mongoose.model.Problem : mongoose.model('Problem', problemSchema);
+export const cfproblemModel = mongoose.models.CFProblem ? mongoose.model.CFProblem : mongoose.model('CFProblem', cfproblemSchema);
 export const playerModel = mongoose.models.playerModel ? mongoose.models.playerModel : mongoose.model('Player', playerSchema);
 const duelModel = mongoose.models.duelModel ? mongoose.models.duelModel : mongoose.model('Duel', duelSchema);
 
