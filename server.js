@@ -27,9 +27,11 @@ while(mongoose.connection.readyState != 1) {
     await sleep(1000);
 }
 
-app.use(cors({
-    origin: allowedOrigins
-}));
+var corsOptions = {
+    origin: 'https://www.cpduels.com',
+    optionsSuccessStatus: 200,
+  }
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/duels', duelsRouter);
@@ -38,7 +40,7 @@ app.use('/cfproblems', cfproblemsRouter);
 const server = app.listen(PORT, () => console.log(`Server is started on port ${PORT}.`));
 const io = new Server(server, {
     cors: {
-        origin: allowedOrigins
+        origin: 'https://www.cpduels.com'
     }
 });
 
