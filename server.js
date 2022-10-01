@@ -28,7 +28,7 @@ while(mongoose.connection.readyState != 1) {
 }
 
 var corsOptions = {
-    origin: 'https://www.cpduels.com',
+    origin: '*',
     optionsSuccessStatus: 200,
   }
 app.use(cors(corsOptions));
@@ -40,7 +40,7 @@ app.use('/cfproblems', cfproblemsRouter);
 const server = app.listen(PORT, () => console.log(`Server is started on port ${PORT}.`));
 const io = new Server(server, {
     cors: {
-        origin: 'https://www.cpduels.com'
+        origin: '*'
     }
 });
 
