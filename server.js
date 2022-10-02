@@ -27,9 +27,20 @@ while(mongoose.connection.readyState != 1) {
     await sleep(1000);
 }
 
-app.use(cors({ origin: true }));
+app.use(cors({
+    origin: '*'
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use((_, res, next) => {
+  res.set('Access-Control-Allow-Origin', '*'); // or 'localhost:8888'
+  res.set('Access-Control-Allow-Methods', 'PUT,POST,GET,DELETE,OPTIONS');
+  res.set(
+    'Access-Control-Allow-Headers',
+    'Origin, X-Requested-With, Content-Type, Accept'
+  );
+  return next();
+}); // sets headers before routes
 app.use('/duels', duelsRouter);
 app.use('/cfproblems', cfproblemsRouter);
 
