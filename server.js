@@ -42,15 +42,18 @@ app.use('/duels', duelsRouter);
 app.use('/cfproblems', cfproblemsRouter);
 
 const server = app.listen(PORT, () => console.log(`Server is started on port ${PORT}.`));
-const io = new Server(server);
-
-io.engine.on("initial_headers", (headers, req) => {
-    headers["Access-Control-Allow-Origin"] = "https://www.cpduels.com";
+const io = new Server(server, {
+    cors:true,
+    origins: ["https://www.cpduels.com"]
 });
 
-io.engine.on("headers", (headers, req) => {
-    headers["Access-Control-Allow-Origin"] = "https://www.cpduels.com"; // url to all
-});
+// io.engine.on("initial_headers", (headers, req) => {
+//     headers["Access-Control-Allow-Origin"] = "https://www.cpduels.com";
+// });
+
+// io.engine.on("headers", (headers, req) => {
+//     headers["Access-Control-Allow-Origin"] = "https://www.cpduels.com"; // url to all
+// });
 
 // app.get('/socket.io/socket.io.js', (req, res) => {
 //     res.setHeader('Access-Control-Allow-Origin', '*');
