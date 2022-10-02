@@ -15,7 +15,6 @@ import CodeforcesAPI from './utils/codeforcesAPI.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
-var cors = require('cors')
 var corsOptions = {
   origin: '*',
   optionsSuccessStatus: 200 
