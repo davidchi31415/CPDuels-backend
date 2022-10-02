@@ -15,7 +15,13 @@ import CodeforcesAPI from './utils/codeforcesAPI.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
+var cors = require('cors')
+var corsOptions = {
+  origin: 'http://yoursite.com',
+  optionsSuccessStatus: 200 
+}
 
+app.use(cors(corsOptions))
 const PORT = process.env.PORT || 8080;
 const DATABASE_URL = process.env.DATABASE_URL || "mongodb+srv://CPDuels:wrongfulphrasenimblemonumentshindigcardstockvastlyappraisalcloaktremor@cpduels.s78kdcw.mongodb.net/?retryWrites=true&w=majority";
 
@@ -27,23 +33,6 @@ while(mongoose.connection.readyState != 1) {
     await sleep(1000);
 }
 
-app.use(cors());
-
-var allowCrossDomain = function(req, res, next) {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With, Accept');
-
-  // intercept OPTIONS method
-  if ('OPTIONS' == req.method) {
-      res.send(200);
-  } else {
-      next();
-  }
-};
-app.use(allowCrossDomain);
-
-app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/duels', duelsRouter);
