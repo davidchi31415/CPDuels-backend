@@ -27,20 +27,7 @@ while(mongoose.connection.readyState != 1) {
     await sleep(1000);
 }
 
-app.use(cors());
-app.options('*', cors());
-
-
-
-app.options('*', (req, res) => {
-    res.set('Access-Control-Allow-Origin', '*');
-    res.send('ok');
-  });
-  
-  app.use((req, res) => {
-    res.set('Access-Control-Allow-Origin', '*');
-  });
-  
+app.use(cors({ origin: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/duels', duelsRouter);
