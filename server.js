@@ -27,14 +27,18 @@ while(mongoose.connection.readyState != 1) {
     await sleep(1000);
 }
 
-app.use(cors({ origin: "https://www.cpduels.com" }));
+app.use(cors({ origin: "https://www.cpduels.com:*" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/duels', duelsRouter);
 app.use('/cfproblems', cfproblemsRouter);
 
 const server = app.listen(PORT, () => console.log(`Server is started on port ${PORT}.`));
-const io = new Server(server);
+const io = new Server(server, {
+    cors: {
+        origin: "https://www.cpduels.com:*"
+    }
+});
 
 // app.get('/socket.io/socket.io.js', (req, res) => {
 //     res.setHeader('Access-Control-Allow-Origin', '*');
