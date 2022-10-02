@@ -1,6 +1,6 @@
 import express from 'express';
 import { cfproblemModel } from '../models/models.js';
-
+import cors from 'cors';
 const cfproblemsRouter = express.Router();
 
 // GET all problems

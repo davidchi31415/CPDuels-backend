@@ -1,7 +1,7 @@
 import express from 'express';
 import duelModel from '../models/models.js';
 import DuelManager from '../utils/duelManager.js';
-
+import cors from 'cors';
 const duelsRouter = express.Router();
 
 // GET all duels
