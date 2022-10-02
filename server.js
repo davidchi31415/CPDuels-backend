@@ -27,9 +27,7 @@ while(mongoose.connection.readyState != 1) {
     await sleep(1000);
 }
 
-app.use(cors({
-    origin: '*'
-}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use((_, res, next) => {
@@ -41,6 +39,7 @@ app.use((_, res, next) => {
   );
   return next();
 }); // sets headers before routes
+app.use(cors());
 app.use('/duels', duelsRouter);
 app.use('/cfproblems', cfproblemsRouter);
 
