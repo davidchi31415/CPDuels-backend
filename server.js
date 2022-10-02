@@ -28,24 +28,13 @@ while(mongoose.connection.readyState != 1) {
 }
 
 
-var corsOptions = {
+let corsOptions = {
     allowedHeaders: ["authorization", "Content-Type"], // you can change the headers
     exposedHeaders: ["authorization"], // you can change the headers
     origin: "https://www.cpduels.com",
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"],
     preflightContinue: false
-  }
-
-  var whitelist = ['https://www.cpduels.com']
-var corsOptionsDelegate = function (req, callback) {
-  var corsOptions;
-  if (whitelist.indexOf(req.header('Origin')) !== -1) {
-    corsOptions = { origin: true } // reflect (enable) the requested origin in the CORS response
-  } else {
-    corsOptions = { origin: false } // disable CORS for this request
-  }
-  callback(null, corsOptions) // callback expects two parameters: error and options
-}
+};
 
 app.use(cors(corsOptions));
 app.use(express.json());
@@ -61,8 +50,6 @@ const io = new Server(server, {
         credentials: true
       }
 });
-
-  
 
 app.get('/socket.io/socket.io.js',cors(corsOptionsDelegate), (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
