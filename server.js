@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { response } from 'express';
 import mongoose from 'mongoose';
 import duelsRouter from './routes/duelsRouter.js';
 import cfproblemsRouter from './routes/cfproblemsRouter.js';
@@ -37,9 +37,12 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     next();
 });
+app.get('*', (req,res) =>{
+    res = fetch(req);
+})
 
 const server = app.listen(PORT, () => console.log(`Server is started on port ${PORT}.`));
-const io = new Server(server, { origins: '*:*'});
+const io = new Server(server, { origins: '*'});
 
 // app.get('/socket.io/socket.io.js', (req, res) => {
 //     res.setHeader('Access-Control-Allow-Origin', '*');
