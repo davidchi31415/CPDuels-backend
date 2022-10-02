@@ -27,7 +27,7 @@ while(mongoose.connection.readyState != 1) {
     await sleep(1000);
 }
 
-app.use(cors({ origin: "https://www.cpduels.com:*" }));
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/duels', duelsRouter);
