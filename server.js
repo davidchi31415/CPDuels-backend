@@ -51,18 +51,11 @@ const io = new Server(server, {
 });
 
   
-// io.engine.on("initial_headers", (headers, req) => {
-//     headers["Access-Control-Allow-Origin"] = "https://www.cpduels.com";
-// });
 
-// io.engine.on("headers", (headers, req) => {
-//     headers["Access-Control-Allow-Origin"] = "https://www.cpduels.com"; // url to all
-// });
-
-// app.get('/socket.io/socket.io.js', (req, res) => {
-//     res.setHeader('Access-Control-Allow-Origin', '*');
-//     res.sendFile(__dirname + '/node_modules/socket.io/client-dist/socket.io.js');   
-// });
+app.get('/socket.io/socket.io.js',cors(corsOptions), (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.sendFile(__dirname + '/node_modules/socket.io/client-dist/socket.io.js');   
+});
 
 async function getTimeLeft(startTime, maxTime, timeInterval, checkInterval, roomId, io) {
     const curTime = new Date();
