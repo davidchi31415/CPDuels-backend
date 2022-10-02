@@ -42,16 +42,20 @@ app.use('/duels', duelsRouter);
 app.use('/cfproblems', cfproblemsRouter);
 
 const server = app.listen(PORT, () => console.log(`Server is started on port ${PORT}.`));
-const io = new Server(server, {
-    cors: {
-        origin: '*',
-    }
+const io = new Server(server);
+
+io.engine.on("initial_headers", (headers, req) => {
+    headers["Access-Control-Allow-Origin"] = "https://www.cpduels.com";
 });
 
-app.get('/socket.io/socket.io.js', (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.sendFile(__dirname + '/node_modules/socket.io/client-dist/socket.io.js');   
+io.engine.on("headers", (headers, req) => {
+    headers["Access-Control-Allow-Origin"] = "https://www.cpduels.com"; // url to all
 });
+
+// app.get('/socket.io/socket.io.js', (req, res) => {
+//     res.setHeader('Access-Control-Allow-Origin', '*');
+//     res.sendFile(__dirname + '/node_modules/socket.io/client-dist/socket.io.js');   
+// });
 
 async function getTimeLeft(startTime, maxTime, timeInterval, checkInterval, roomId, io) {
     const curTime = new Date();
