@@ -31,8 +31,7 @@ app.use(cors());
 app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/duels', duelsRouter);
-app.use('/cfproblems', cfproblemsRouter);
+
 
 app.use((req, res, next) => { //doesn't send response just adjusts it
     res.header("Access-Control-Allow-Origin", "*") //* to give access to any origin
@@ -46,6 +45,9 @@ app.use((req, res, next) => { //doesn't send response just adjusts it
     }
     next(); //so that other routes can take over
 })
+
+app.use('/duels', duelsRouter);
+app.use('/cfproblems', cfproblemsRouter);
 
 const server = app.listen(PORT, () => console.log(`Server is started on port ${PORT}.`));
 const io = new Server(server, {
