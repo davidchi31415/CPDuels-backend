@@ -33,26 +33,30 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/duels', duelsRouter);
 app.use('/cfproblems', cfproblemsRouter);
 
-app.use((req, res, next) => {
-    req.header('Access-Control-Allow-Origin', '*');
-    req.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-    next();
-});
+// app.use((req, res, next) => {
+//     req.header('Access-Control-Allow-Origin', '*');
+//     req.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+//     res.header('Access-Control-Allow-Origin', '*');
+//     res.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+//     next();
+// });
 
 const server = app.listen(PORT, () => console.log(`Server is started on port ${PORT}.`));
-const io = new Server(server, { origins: '*'});
+const io = new Server(server, {
+    cors: {
+      origin: "*"
+    }
+  });
 
-app.get('/socket.io/*', (req, res, next) => {
-    // res.setHeader('Access-Control-Allow-Origin', '*');
-    // res.sendFile(__dirname + '/node_modules/socket.io/client-dist/socket.io.js');   
-    req.header('Access-Control-Allow-Origin', '*');
-    req.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-    next();
-});
+// app.get('/socket.io/*', (req, res, next) => {
+//     // res.setHeader('Access-Control-Allow-Origin', '*');
+//     // res.sendFile(__dirname + '/node_modules/socket.io/client-dist/socket.io.js');   
+//     req.header('Access-Control-Allow-Origin', '*');
+//     req.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+//     res.header('Access-Control-Allow-Origin', '*');
+//     res.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+//     next();
+// });
 
 async function getTimeLeft(startTime, maxTime, timeInterval, checkInterval, roomId, io) {
     const curTime = new Date();
