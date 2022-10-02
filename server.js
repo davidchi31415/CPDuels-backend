@@ -51,7 +51,7 @@ const io = new Server(server, {
       }
 });
 
-app.get('/socket.io/socket.io.js',cors(corsOptionsDelegate), (req, res) => {
+app.get('/socket.io/socket.io.js', (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.sendFile(__dirname + '/node_modules/socket.io/client-dist/socket.io.js');   
 });
