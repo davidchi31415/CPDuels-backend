@@ -33,6 +33,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/duels', duelsRouter);
 app.use('/cfproblems', cfproblemsRouter);
 
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    next();
+});
+
 const server = app.listen(PORT, () => console.log(`Server is started on port ${PORT}.`));
 const io = new Server(server, { origins: '*:*'});
 
