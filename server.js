@@ -17,7 +17,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 var cors = require('cors')
 var corsOptions = {
-  origin: 'http://yoursite.com',
+  origin: '*',
   optionsSuccessStatus: 200 
 }
 
