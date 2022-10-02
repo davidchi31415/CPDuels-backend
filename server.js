@@ -28,16 +28,11 @@ while(mongoose.connection.readyState != 1) {
 }
 
 app.use(cors());
+app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/duels', duelsRouter);
 app.use('/cfproblems', cfproblemsRouter);
-
-app.all('/*', function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "X-Requested-With");
-    next();
-  });
 
 const server = app.listen(PORT, () => console.log(`Server is started on port ${PORT}.`));
 const io = new Server(server, {
