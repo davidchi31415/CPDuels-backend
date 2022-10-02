@@ -36,6 +36,8 @@ app.use('/cfproblems', cfproblemsRouter);
 app.use((req, res, next) => {
     req.header('Access-Control-Allow-Origin', '*');
     req.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
     next();
 });
 
