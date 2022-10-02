@@ -27,34 +27,19 @@ while(mongoose.connection.readyState != 1) {
     await sleep(1000);
 }
 
-
-let corsOptions = {
-    allowedHeaders: ["authorization", "Content-Type"], // you can change the headers
-    exposedHeaders: ["authorization"], // you can change the headers
-    origin: "https://www.cpduels.com",
-    methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"],
-    preflightContinue: false
-};
-
-app.use(cors(corsOptions));
+app.use(cors({ origin: "https://www.cpduels.com" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/duels', duelsRouter);
 app.use('/cfproblems', cfproblemsRouter);
 
 const server = app.listen(PORT, () => console.log(`Server is started on port ${PORT}.`));
-const io = new Server(server, {
-    cors: {
-        origin: "https://www.cpduels.com",
-        methods: ["GET", "POST"],
-        credentials: true
-      }
-});
+const io = new Server(server);
 
-app.get('/socket.io/socket.io.js', (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.sendFile(__dirname + '/node_modules/socket.io/client-dist/socket.io.js');   
-});
+// app.get('/socket.io/socket.io.js', (req, res) => {
+//     res.setHeader('Access-Control-Allow-Origin', '*');
+//     res.sendFile(__dirname + '/node_modules/socket.io/client-dist/socket.io.js');   
+// });
 
 async function getTimeLeft(startTime, maxTime, timeInterval, checkInterval, roomId, io) {
     const curTime = new Date();
