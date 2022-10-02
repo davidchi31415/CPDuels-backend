@@ -1,10 +1,10 @@
 import express from 'express';
 import { cfproblemModel } from '../models/models.js';
-import cors from 'cors';
+
 const cfproblemsRouter = express.Router();
 
 // GET all problems
-cfproblemsRouter.get('/',cors(), async (req, res) => {
+cfproblemsRouter.get('/', async (req, res) => {
   try {
     const problems = await cfproblemModel.find();
     res.send(problems);
@@ -14,12 +14,12 @@ cfproblemsRouter.get('/',cors(), async (req, res) => {
 });
 
 // GET one problem
-cfproblemsRouter.get('/:id', getProblem,cors(), (req, res) => {
+cfproblemsRouter.get('/:id', getProblem, (req, res) => {
   res.send(res.problem);
 });
 
 // POST one problem
-cfproblemsRouter.post('/add',cors(), async (req, res) => {
+cfproblemsRouter.post('/add', async (req, res) => {
   const problem = new cfproblemModel(req.body);
   try {
     const newProblem = await problem.save();
@@ -30,12 +30,12 @@ cfproblemsRouter.post('/add',cors(), async (req, res) => {
 });
 
 // PATCH one problem
-cfproblemsRouter.get('/:id', getProblem,cors(), (req, res) => {
+cfproblemsRouter.get('/:id', getProblem, (req, res) => {
 
 });
 
 // DELETE one problem
-cfproblemsRouter.delete('/:id', getProblem,cors(), async (req, res) => {
+cfproblemsRouter.delete('/:id', getProblem, async (req, res) => {
   try {
     await res.problem.delete();
     res.json({ message: "Problem deleted." });
@@ -45,7 +45,7 @@ cfproblemsRouter.delete('/:id', getProblem,cors(), async (req, res) => {
 });
 
 // DELETE all problems
-cfproblemsRouter.delete('/',cors(), async (req, res) => {
+cfproblemsRouter.delete('/', async (req, res) => {
   try {
     await cfproblemModel.deleteMany();
     res.json({ message: "All problems deleted." });

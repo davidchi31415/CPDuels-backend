@@ -1,11 +1,11 @@
 import express from 'express';
 import duelModel from '../models/models.js';
 import DuelManager from '../utils/duelManager.js';
-import cors from 'cors';
+
 const duelsRouter = express.Router();
 
 // GET all duels
-duelsRouter.get('/',cors(), async (req, res) => {
+duelsRouter.get('/', async (req, res) => {
   try {
     const duels = await duelModel.find();
     res.send(duels);
@@ -15,12 +15,12 @@ duelsRouter.get('/',cors(), async (req, res) => {
 });
 
 // GET one duel
-duelsRouter.get('/:id', getDuel,cors(), (req, res) => {
+duelsRouter.get('/:id', getDuel, (req, res) => {
   res.send(res.duel);
 });
 
 // POST one duel
-duelsRouter.post('/add',cors(), async (req, res) => {
+duelsRouter.post('/add', async (req, res) => {
   const duel = new duelModel(req.body);
   console.log(req.body);
   let validDuel = await DuelManager.isValidDuelRequest(
@@ -40,7 +40,7 @@ duelsRouter.post('/add',cors(), async (req, res) => {
 });
 
 // PATCH one duel
-duelsRouter.patch('/:id', getDuel,cors(), async (req, res) => {
+duelsRouter.patch('/:id', getDuel, async (req, res) => {
   if (req.body.status != null) {
     res.duel.status = req.body.status;
   }
@@ -53,7 +53,7 @@ duelsRouter.patch('/:id', getDuel,cors(), async (req, res) => {
 });
 
 // DELETE one duel
-duelsRouter.delete('/:id', getDuel,cors(), async (req, res) => {
+duelsRouter.delete('/:id', getDuel, async (req, res) => {
   try {
     await res.duel.delete();
     res.json({ message: "Duel deleted." });
@@ -63,7 +63,7 @@ duelsRouter.delete('/:id', getDuel,cors(), async (req, res) => {
 });
 
 // DELETE all duels
-duelsRouter.delete('/',cors(), async (req, res) => {
+duelsRouter.delete('/', async (req, res) => {
   try {
     await duelModel.deleteMany();
     res.json({ message: "All duels deleted." });
