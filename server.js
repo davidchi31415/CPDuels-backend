@@ -28,13 +28,22 @@ while(mongoose.connection.readyState != 1) {
 }
 
 app.use(cors());
-app.options('*', cors());  // enable pre-flight
-app.options('/*', function (req, res) {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader('Access-Control-Allow-Methods', '*');
-    res.setHeader("Access-Control-Allow-Headers", "*");
-    res.end();
-  });
+
+var allowCrossDomain = function(req, res, next) {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With, Accept');
+
+  // intercept OPTIONS method
+  if ('OPTIONS' == req.method) {
+      res.send(200);
+  } else {
+      next();
+  }
+};
+app.use(allowCrossDomain);
+
+app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/duels', duelsRouter);
