@@ -45,11 +45,11 @@ const server = app.listen(PORT, () => console.log(`Server is started on port ${P
 const io = new Server(server, {
     cors: {
         origin: '*',
-        methods: ["GET","POST"]
     }
 });
 
 app.get('/socket.io/socket.io.js', (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.sendFile(__dirname + '/node_modules/socket.io/client-dist/socket.io.js');   
 });
 
