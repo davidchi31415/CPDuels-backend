@@ -148,7 +148,7 @@ class DuelManager {
                     if (problems[k].playerOneScore > 0) continue; // if player already solved, stop considering
                     if (solves[i].index===problems[k].index && solves[i].contestId===problems[k].contestId) {
                         // submission for problem match
-                        if (solves[i].verdict==='TESTING') {
+                        if (!solves[i].verdict || solves[i].verdict==='TESTING') {
                             continue;
                         }
                         if (solves[i].verdict==='OK') {
@@ -172,7 +172,7 @@ class DuelManager {
                     if (problems[k].playerTwoScore > 0) continue; // if player already solved, stop considering
                     if (solves[i].index===problems[k].index && solves[i].contestId===problems[k].contestId) {
                         // submission for problem match
-                        if (solves[i].verdict==='TESTING') {
+                        if (!solves[i].verdict || solves[i].verdict==='TESTING') {
                             continue;
                         }
                         if (solves[i].verdict==='OK') {

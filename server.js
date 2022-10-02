@@ -16,7 +16,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 var corsOptions = {
-  origin: '*',
+  origin: 'https://cpduels-backend-production.up.railway.app',
   optionsSuccessStatus: 200 
 }
 
@@ -40,7 +40,7 @@ app.use('/cfproblems', cfproblemsRouter);
 const server = app.listen(PORT, () => console.log(`Server is started on port ${PORT}.`));
 const io = new Server(server, {
     cors: {
-      origin: "*"
+      origin: "https://cpduels-backend-production.up.railway.app"
     }
   });
 
