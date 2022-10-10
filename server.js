@@ -107,6 +107,8 @@ io.on('connection', async (socket) => {
                 let timeLeft = await getTimeLeft(startTime, maxTime, timeInterval, checkInterval, roomId, io);
                 io.emit('time-left', {roomId: roomId, timeLeft: timeLeft});
             }, 1000);
+
+            
         }
     });
 });
