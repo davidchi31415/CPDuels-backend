@@ -26,6 +26,10 @@ const cfproblemSchema = mongoose.Schema({
       type: String
     }],
     required: false
+  },
+  content: {
+    type: {},
+    required: true
   }
 });
 

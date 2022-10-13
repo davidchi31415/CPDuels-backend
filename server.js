@@ -11,12 +11,13 @@ import TaskManager from './utils/taskManager.js';
 import { sleep } from './utils/helpers.js';
 import cors from 'cors';
 import CodeforcesAPI from './utils/codeforcesAPI.js';
+import CodeforcesScraper from './utils/scrapers/codeforcesScraper.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 var corsOptions = {
-  origin: 'https://cpduels-backend-production.up.railway.app',
+  origin: allowedOrigins,
   optionsSuccessStatus: 200 
 }
 
@@ -38,11 +39,11 @@ app.use('/duels', duelsRouter);
 app.use('/cfproblems', cfproblemsRouter);
 
 const server = app.listen(PORT, () => console.log(`Server is started on port ${PORT}.`));
-const io = new Server(server, {
-    cors: {
-      origin: "https://cpduels-backend-production.up.railway.app"
-    }
-  });
+const io = new Server(server, 
+    cors({
+      origin: allowedOrigins
+    })
+);
 
 async function getTimeLeft(startTime, maxTime, timeInterval, checkInterval, roomId, io) {
     const curTime = new Date();
@@ -114,3 +115,5 @@ io.on('connection', async (socket) => {
 });
 
 export default db;
+
+await TaskManager.updateProblemset();
