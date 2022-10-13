@@ -116,4 +116,4 @@ io.on('connection', async (socket) => {
 
 export default db;
 
-await TaskManager.updateProblemset();
+// await TaskManager.updateProblemset();
