@@ -4,7 +4,7 @@ let client = superagent.agent();
 class CodeforcesScraper {
 
     static async findProblemConstraints(body, contestId, index) {
-      let re = /<div class="time-limit">(.*?)<p>/;
+      let re = /<div class="time-limit">([\s\S]*?)<p>/;
       try {
         let raw = body.match(re)[0];
         return raw.substring(0, raw.length-3);
@@ -14,7 +14,7 @@ class CodeforcesScraper {
     }
 
     static async findProblemStatement(body, contestId, index) {
-        let re1 = /<div class="problem-statement">(.*?)<div class="input-specification">/;
+        let re1 = /<div class="problem-statement">([\s\S]*?)<div class="input-specification">/;
         try {
           let totalProblemStatement = body.match(re1)[0];
           let re2 = /<p>(.*?)<\/div><div class="input-specification">/;
@@ -28,7 +28,7 @@ class CodeforcesScraper {
     }
 
     static async findProblemInput(body, contestId, index) {
-      let re = /<div class="input-specification"><div class="section-title">Input<\/div>(.*?)<\/div><div class="output-specification">/;
+      let re = /<div class="input-specification"><div class="section-title">Input<\/div>([\s\S]*?)<\/div><div class="output-specification">/;
       try {
         return body.match(re)[1];
       } catch (e) {
@@ -37,11 +37,29 @@ class CodeforcesScraper {
     }
 
     static async findProblemOutput(body, contestId, index) {
-      let re = /<div class="output-specification"><div class="section-title">Output<\/div>(.*?)<\/div><div class="sample-tests">/;
+      let re = /<div class="output-specification"><div class="section-title">Output<\/div>([\s\S]*?)<\/div><div class="sample-tests">/;
       try {
         return body.match(re)[1];
       } catch (e) {
         console.log(`Couldn't fetch problem ${contestId}${index} input: ` + e);
+      }
+    }
+
+    static async findProblemTestCases(body, contestId, index) {
+      let re = /<div class="sample-tests">([\s\S]*?)<\/div><\/div><\/div>/;
+      try {
+        return body.match(re)[0];  
+      } catch (e) {
+        console.log(`Couldn't fetch problem ${contestId}${index} test cases: ` + e);
+      }
+    }
+
+    static async findProblemNote(body, contestId, index) {
+      let re = /<div class="note">([\s\S]*?)<\/p><\/div>/;
+      try {
+        return body.match(re)[0]; 
+      } catch (e) {
+        console.log(`Couldn't fetch problem ${contestId}${index} note: It probably doesn't have one.`);
       }
     }
 
@@ -71,12 +89,16 @@ class CodeforcesScraper {
         let problemStatement = await this.findProblemStatement(texFilteredResp, contestId, index);
         let problemInput = await this.findProblemInput(texFilteredResp, contestId, index);
         let problemOutput = await this.findProblemOutput(texFilteredResp, contestId, index);
-        if (!problemConstraints || !problemStatement || !problemInput || !problemOutput) return false;
+        let problemTestCases = await this.findProblemTestCases(texFilteredResp, contestId, index);
+        let problemNote = await this.findProblemNote(texFilteredResp, contestId, index);
+        if (!problemConstraints || !problemStatement || !problemInput || !problemOutput || !problemTestCases) return false;
         return {
-          problemConstraints: problemConstraints,
-          problemStatement: problemStatement,
-          problemInput: problemInput,
-          problemOutput: problemOutput
+          constraints: problemConstraints,
+          statement: problemStatement,
+          input: problemInput,
+          output: problemOutput,
+          testCases: problemTestCases,
+          note: problemNote
         };
       } catch (e) {
         console.log(`Couldn't fetch problem ${contestId}${index} content: ` + e);
