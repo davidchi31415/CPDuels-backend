@@ -3,6 +3,7 @@ import CodeforcesAPI from "./codeforcesAPI.js";
 import mongoose from "mongoose";
 import { ObjectId } from "mongodb";
 import TaskManager from "./taskManager.js";
+import SubmissionManager from "./submissionsManager.js";
 
 class DuelManager {
   static async findDuel(id) {
@@ -288,6 +289,20 @@ class DuelManager {
       return ["WON", duel.players[1].handle];
     } else {
       return ["TIE"];
+    }
+  }
+
+  static async submitProblem(id, uid, submission) {
+    try {
+      let duel = await this.findDuel(id);
+      let problem = duel.problems[submission.number-1];
+      await SubmissionManager.login();
+      console.log(submission.content);
+      await SubmissionManager.submit(problem.contestId, problem.index, submission.content);
+      return [true];
+    } catch (e) {
+      console.log(`Duel ${id} player with uid ${uid} failed to submit problem: ${e}`);
+      return [false, e];
     }
   }
 

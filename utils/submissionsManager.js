@@ -11,14 +11,15 @@ class SubmissionManager {
 		try {
 			let resp = await client.get("https://codeforces.com/enter/");
 			let csrf = await this.findCsrf(resp.text);
+			console.log(csrf);
 			await client
 				.post("http://codeforces.com/enter/")
 				.send({
 					_tta: "176",
 					csrf_token: csrf,
 					action: "enter",
-					handleOrEmail: "",
-					password: "",
+					handleOrEmail: "cpduels-bot",
+					password: "davidandjeffrey",
 				})
 				.set("Content-Type", "application/x-www-form-urlencoded")
 				.then((res) => {

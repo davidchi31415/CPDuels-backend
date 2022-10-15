@@ -73,7 +73,7 @@ class CodeforcesScraper {
       } catch (e) {
         console.log(`Couldn't fetch problem ${contestId}${index}, will retry: ` + e);
       }
-      while (!resp.ok) {
+      while (!resp || !resp.ok) {
         await sleep(100);
         try {
           resp = await client.get(`https://codeforces.com/problemset/problem/${contestId}/${index}`);
