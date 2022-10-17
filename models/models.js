@@ -97,6 +97,10 @@ const playerSchema = mongoose.Schema({
 });
 
 const duelSchema = mongoose.Schema({
+  platform: {
+    type: String,
+    required: true
+  },
   players: {
     type: [playerSchema],
     required: true,

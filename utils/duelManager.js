@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import { ObjectId } from "mongodb";
 import TaskManager from "./taskManager.js";
 import SubmissionManager from "./submissionsManager.js";
+import languages from './languages.js';
 
 class DuelManager {
   static async findDuel(id) {
@@ -324,12 +325,17 @@ class DuelManager {
   }
 
   static async isValidDuelRequest(
+    platform,
     players,
     problemCount,
     ratingMin,
     ratingMax,
-    timeLimit
+    timeLimit,
   ) {
+    let validPlatform = (platform === 'CF') || (platform === 'AT') || (platform === 'LC');
+    if (!validPlatform) {
+      return [false, "Invalid Platform"]
+    }
     let validHandle = await CodeforcesAPI.check_handle(players[0].handle);
     if (!validHandle[0]) {
       return [false, "Invalid Handle"];
@@ -348,11 +354,15 @@ class DuelManager {
     if (!validRatings) {
       return [false, "Invalid Ratings"];
     }
-    let validTimeLimit = timeLimit && timeLimit >= 10 && timeLimit <= 180;
+    let validTimeLimit = timeLimit && timeLimit >= 5 && timeLimit <= 180;
     if (!validTimeLimit) {
       return [false, "Invalid Time Limit"];
     }
     return [true];
+  }
+
+  static async isValidSubmitRequest(platform, uid, submission) {
+    
   }
 }
 
