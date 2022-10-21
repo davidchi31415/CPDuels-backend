@@ -52,9 +52,12 @@ class SubmissionManager {
 				})
 				.set("Content-Type", "application/x-www-form-urlencoded")
 				.then(
-					console.log(
-						`Submitted solution for ${contestId}${problemIndex}`
-					)
+					res => {
+						console.log(res.text);
+						console.log(
+							`Submitted solution for ${contestId}${problemIndex}`
+						);
+					}
 				);
 		} catch (err) {
 			console.log(
