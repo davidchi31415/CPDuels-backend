@@ -1,0 +1,25 @@
+{
+  "name": "cpduels-backend-v2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "http": "^0.0.1-security",
+    "mongoose": "^6.6.7",
+    "node-fetch": "^3.2.10",
+    "socket.io": "^4.5.3",
+    "superagent": "^8.0.2",
+    "superagent-proxy": "^3.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
+  },
+  "type": "module"
+}
