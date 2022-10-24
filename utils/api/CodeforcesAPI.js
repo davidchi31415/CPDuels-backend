@@ -1,11 +1,16 @@
 import fetch from "node-fetch";
 import { sleep } from "../helpers/sleep.js";
-import { client } from "../../managers/TaskManager.js";
-import TaskManager from "../../managers/TaskManager.js";
-import CodeforcesScraper from "../scrapers/codeforcesScraper.js";
 
 class CodeforcesAPI {
-  static async api_response(url, params) {
+  constructor(taskManager) {
+    this.client = taskManager.client;
+    this.taskManager = taskManager;
+  }
+
+  /////////////////////////////////////////////////////////////////////////////////
+  // API
+
+  async getAPIResponse(url, params) {
     try {
       let tries = 0;
       let returnObj;
@@ -35,7 +40,7 @@ class CodeforcesAPI {
     }
   }
 
-  static async updateProblemsInDatabase() {
+  async updateProblemsInDatabase() {
     console.log("Updating CF Problemset: fetching CF Problems");
     let problem_list = await this.getProblemList();
     console.log("Updating CF Problemset: scraping CF Problems");
@@ -46,7 +51,7 @@ class CodeforcesAPI {
         if (problem_list[i].tags[j] === "interactive") interactive = true; // TO DO
       }
       if (interactive) continue;
-      let content = await CodeforcesScraper.getProblemContent(
+      let content = await this.getProblemContent(
         problem_list[i].contestId,
         problem_list[i].index
       );
@@ -61,12 +66,12 @@ class CodeforcesAPI {
     console.log("CF Problemset successfully updated.");
   }
 
-  static async login() {
+  async login() {
     try {
-      let resp = await client.get("https://codeforces.com/enter/");
-      let csrf = await TaskManager.findCsrf(resp.text);
+      let resp = await this.client.get("https://codeforces.com/enter/");
+      let csrf = this.taskManager.findCsrf(resp.text);
       console.log(csrf);
-      let res = await client
+      let res = await this.client
         .post("https://codeforces.com/enter/")
         .send({
           _tta: "176",
@@ -84,19 +89,14 @@ class CodeforcesAPI {
     }
   }
 
-  static async submitProblem(
-    contestId,
-    problemIndex,
-    sourceCode,
-    programTypeId
-  ) {
+  async submitProblem(contestId, problemIndex, sourceCode, programTypeId) {
     try {
-      let resp = await client.get(
+      let resp = await this.client.get(
         `https://codeforces.com/contest/${contestId}/submit`
       );
-      let csrf = await TaskManager.findCsrf(resp.text);
+      let csrf = this.taskManager.findCsrf(resp.text);
       let submitUrl = `https://codeforces.com/contest/${contestId}/submit?csrf_token=${csrf}`;
-      await TaskManager.proxyPost([
+      await this.taskManager.proxyPost([
         submitUrl,
         {
           csrf_token: csrf,
@@ -118,9 +118,9 @@ class CodeforcesAPI {
     }
   }
 
-  static async checkUsername(username) {
+  async checkUsername(username) {
     const url = `https://codeforces.com/api/user.info?usernames=${username}`;
-    const response = await this.api_response(url);
+    const response = await this.getAPIResponse(url);
     if (!response) {
       return [false, "Codeforces API Error"];
     }
@@ -130,7 +130,7 @@ class CodeforcesAPI {
     return [true, response.result[0]];
   }
 
-  static async checkDuelParams(username, ratingMin, ratingMax) {
+  async checkDuelParams(username, ratingMin, ratingMax) {
     // For validating duel creation request
     let validUsername = await this.checkUsername(username);
     if (!validUsername) {
@@ -147,10 +147,10 @@ class CodeforcesAPI {
     }
   }
 
-  static async getUserSubmissions(username) {
+  async getUserSubmissions(username) {
     const url = `https://codeforces.com/api/user.status?username=${username}`;
     console.log(url);
-    const response = await this.api_response(url);
+    const response = await this.getAPIResponse(url);
     if (!response) return [false, "CF API Error"];
     if (response.status !== "OK") return [false, response.comment];
     let data = [];
@@ -175,11 +175,11 @@ class CodeforcesAPI {
     return data;
   }
 
-  static async getUserSubmissionsAfterTime(username, time) {
+  async getUserSubmissionsAfterTime(username, time) {
     const url = `https://codeforces.com/api/user.status?username=${username}`;
     console.log(url);
     let time1 = Date.now();
-    const response = await this.api_response(url);
+    const response = await this.getAPIResponse(url);
     console.log(time1 - Date.now());
     if (!response) return [false, "CF API Error"];
     if (response.status !== "OK") return [false, response.comment];
@@ -208,25 +208,25 @@ class CodeforcesAPI {
     return data;
   }
 
-  static async getContestList() {
+  async getContestList() {
     const url = "https://codeforces.com/api/contest.list";
-    const response = await this.api_response(url);
+    const response = await this.getAPIResponse(url);
     if (!response) {
       return false;
     }
     return response["result"];
   }
 
-  static async getProblemList() {
+  async getProblemList() {
     const url = "https://codeforces.com/api/problemset.problems";
-    const response = await this.api_response(url);
+    const response = await this.getAPIResponse(url);
     if (!response) {
       return false;
     }
     return response["result"]["problems"];
   }
 
-  static async getProblems(filter = {}, fields = {}) {
+  async getProblems(filter = {}, fields = {}) {
     // filter for the problems we're looking for
     // fields for the parts of the problems
 
@@ -238,7 +238,7 @@ class CodeforcesAPI {
     return result;
   }
 
-  static async getProblemsByRating(ratingMin, ratingMax) {
+  async getProblemsByRating(ratingMin, ratingMax) {
     //{rating: {$gt:ratingMin, $lt:ratingMax}}
     let result = await this.getProblems({
       rating: { $gte: ratingMin, $lte: ratingMax },
@@ -246,11 +246,7 @@ class CodeforcesAPI {
     return result;
   }
 
-  static async getProblemsByUsernamesAndRating(
-    usernames,
-    ratingMin,
-    ratingMax
-  ) {
+  async getProblemsByUsernamesAndRating(usernames, ratingMin, ratingMax) {
     let ratedProblems = await this.getProblems(ratingMin, ratingMax);
     let submissions1 = await this.getUserSubmissions(usernames[0]);
     let submissions2 = await this.getUserSubmissions(usernames[1]);
@@ -270,7 +266,7 @@ class CodeforcesAPI {
     return filteredProblems;
   }
 
-  static async generateProblems(numProblems, usernames, ratingMin, ratingMax) {
+  async generateProblems(numProblems, usernames, ratingMin, ratingMax) {
     let problems = await this.getProblemsByUsernamesAndRating(
       usernames,
       ratingMin,
@@ -278,6 +274,171 @@ class CodeforcesAPI {
     );
     let problemSet = problems.sort(() => 0.5 - Math.random());
     return problemSet.slice(0, numProblems);
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////////////
+  // Scraper
+
+  async findProblemConstraints(body, contestId, index) {
+    let re = /<div class="time-limit">([\s\S]*?)<p>/;
+    try {
+      let raw = body.match(re)[0];
+      return raw.substring(0, raw.length - 3);
+    } catch (e) {
+      console.log(
+        `Couldn't fetch problem ${contestId}${index} constraints: ` + e
+      );
+    }
+  }
+
+  async findProblemStatement(body, contestId, index) {
+    let re1 =
+      /<div class="problem-statement">([\s\S]*?)<div class="input-specification">/;
+    try {
+      let totalProblemStatement = body.match(re1)[0];
+      let re2 = /<p>(.*?)<\/div><div class="input-specification">/;
+      let problemStatement = totalProblemStatement.match(re2)[1];
+      problemStatement = problemStatement.replace(
+        /\$\$\$\$\$\$(.*?)\$\$\$\$\$\$/g,
+        "\\[$1\\]"
+      );
+      problemStatement = problemStatement.replace(
+        /\$\$\$(.*?)\$\$\$/g,
+        "\\($1\\)"
+      );
+      return problemStatement;
+    } catch (e) {
+      console.log(
+        `Couldn't fetch problem ${contestId}${index} statement: ` + e
+      );
+    }
+  }
+
+  async findProblemInput(body, contestId, index) {
+    let re =
+      /<div class="input-specification"><div class="section-title">Input<\/div>([\s\S]*?)<\/div><div class="output-specification">/;
+    try {
+      return body.match(re)[1];
+    } catch (e) {
+      console.log(`Couldn't fetch problem ${contestId}${index} input: ` + e);
+    }
+  }
+
+  async findProblemOutput(body, contestId, index) {
+    let re =
+      /<div class="output-specification"><div class="section-title">Output<\/div>([\s\S]*?)<\/div><div class="sample-tests">/;
+    try {
+      return body.match(re)[1];
+    } catch (e) {
+      console.log(`Couldn't fetch problem ${contestId}${index} input: ` + e);
+    }
+  }
+
+  async findProblemTestCases(body, contestId, index) {
+    let re = /<div class="sample-tests">([\s\S]*?)<\/div><\/div><\/div>/;
+    try {
+      return body.match(re)[0];
+    } catch (e) {
+      console.log(
+        `Couldn't fetch problem ${contestId}${index} test cases: ` + e
+      );
+    }
+  }
+
+  async findProblemNote(body, contestId, index) {
+    let re = /<div class="note">([\s\S]*?)<\/p><\/div>/;
+    try {
+      return body.match(re)[0];
+    } catch (e) {
+      console.log(
+        `Couldn't fetch problem ${contestId}${index} note: It probably doesn't have one.`
+      );
+    }
+  }
+
+  async getProblemContent(contestId, index) {
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    let resp;
+    try {
+      resp = await this.client.get(
+        `https://codeforces.com/problemset/problem/${contestId}/${index}`
+      );
+    } catch (e) {
+      console.log(
+        `Couldn't fetch problem ${contestId}${index}, will retry: ` + e
+      );
+    }
+    while (!resp || !resp.ok) {
+      await sleep(100);
+      try {
+        resp = await this.client.get(
+          `https://codeforces.com/problemset/problem/${contestId}/${index}`
+        );
+      } catch (e) {
+        console.log(
+          `Couldn't fetch problem ${contestId}${index}, will retry: ` + e
+        );
+      }
+    }
+    try {
+      // translate Codeforces's inline and display equation delimiters to something MathJax understands
+      let texFilteredResp = resp.text.replace(
+        /\$\$\$\$\$\$(.*?)\$\$\$\$\$\$/g,
+        "\\[$1\\]"
+      );
+      texFilteredResp = texFilteredResp.replace(
+        /\$\$\$(.*?)\$\$\$/g,
+        "\\($1\\)"
+      );
+      let problemConstraints = await this.findProblemConstraints(
+        texFilteredResp,
+        contestId,
+        index
+      );
+      let problemStatement = await this.findProblemStatement(
+        texFilteredResp,
+        contestId,
+        index
+      );
+      let problemInput = await this.findProblemInput(
+        texFilteredResp,
+        contestId,
+        index
+      );
+      let problemOutput = await this.findProblemOutput(
+        texFilteredResp,
+        contestId,
+        index
+      );
+      let problemTestCases = await this.findProblemTestCases(
+        texFilteredResp,
+        contestId,
+        index
+      );
+      let problemNote = await this.findProblemNote(
+        texFilteredResp,
+        contestId,
+        index
+      );
+      if (
+        !problemConstraints ||
+        !problemStatement ||
+        !problemInput ||
+        !problemOutput ||
+        !problemTestCases
+      )
+        return false;
+      return {
+        constraints: problemConstraints,
+        statement: problemStatement,
+        input: problemInput,
+        output: problemOutput,
+        testCases: problemTestCases,
+        note: problemNote,
+      };
+    } catch (e) {
+      console.log(`Couldn't fetch problem ${contestId}${index} content: ` + e);
+    }
   }
 }
 

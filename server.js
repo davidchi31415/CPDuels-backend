@@ -1,18 +1,14 @@
-import express, { response } from "express";
+import express from "express";
 import mongoose from "mongoose";
 import duelsRouter from "./routes/duelsRouter.js";
 import cfproblemsRouter from "./routes/cfproblemsRouter.js";
-// import DuelManager from "./utils/duelManager.js";
 import { Server } from "socket.io";
 import allowedOrigins from "./config/origins.js";
-// import TaskManager from "./utils/taskManager.js";
 import { sleep } from "./utils/helpers/sleep.js";
 import cors from "cors";
-import CodeforcesAPI from "./utils/api/codeforcesAPI.js";
-// import CodeforcesScraper from "./utils/scrapers/codeforcesScraper.js";
-// import ProxyManager from "./utils/proxyManager.js";
-import { wProx } from "./managers/TaskManager.js";
 import TaskManager from "./managers/TaskManager.js";
+import SocketManager from "./managers/SocketManager.js";
+import DuelManager from "./managers/DuelManager.js";
 
 const app = express();
 var corsOptions = {
@@ -30,17 +26,18 @@ mongoose.connect(DATABASE_URL);
 const db = mongoose.connection;
 db.on("error", (err) => console.log(err));
 db.once("open", async () => console.log("Connected to database."));
-// while (mongoose.connection.readyState != 1) {
-// 	await sleep(1000);
-// }
-setInterval(async function () {
-  console.log(wProx);
-  while (wProx.length == 0) {
-    await sleep(1000);
-  }
-  await CodeforcesAPI.login();
-  //   await CodeforcesAPI.submitProblem(1729, "f", "frfraasdfsdf", 73);
-}, 10000);
+while (mongoose.connection.readyState != 1) {
+	await sleep(1000);
+}
+
+// setInterval(async function () {
+//   console.log(wProx);
+//   while (wProx.length == 0) {
+//     await sleep(1000);
+//   }
+//   await CodeforcesAPI.login();
+//   //   await CodeforcesAPI.submitProblem(1729, "f", "frfraasdfsdf", 73);
+// }, 10000);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -56,127 +53,9 @@ const io = new Server(
   })
 );
 
-// async function getTimeLeft(
-// 	startTime,
-// 	maxTime,
-// 	timeInterval,
-// 	checkInterval,
-// 	roomId,
-// 	io
-// ) {
-// 	const curTime = new Date();
-// 	let timeDifference = Math.abs(curTime.getTime() - startTime.getTime());
-// 	if (timeDifference >= maxTime) {
-// 		if (timeInterval) clearInterval(timeInterval);
-// 		if (checkInterval) clearInterval(checkInterval);
-// 		await DuelManager.finishDuel(roomId);
-// 		io.emit("status-change", { roomId: roomId, newStatus: "FINISHED" });
-// 		return "Time's up.";
-// 	}
-// 	return Math.ceil((maxTime - timeDifference) / 1000);
-// }
-
-// io.on("connection", async (socket) => {
-// 	socket.on("join", (roomId) => {
-// 		socket.join(roomId);
-// 	});
-// 	socket.on("join-duel", async ({ roomId, handle, uid }) => {
-// 		let duelState = await DuelManager.getDuelState(roomId);
-// 		if (duelState === "WAITING") {
-// 			console.log(handle + " Wants to Join Duel " + roomId);
-// 			let validJoin = await DuelManager.isValidJoinRequest(
-// 				roomId,
-// 				handle
-// 			);
-// 			if (validJoin[0]) {
-// 				await DuelManager.addDuelPlayer(roomId, handle, uid);
-// 				await DuelManager.changeDuelState(roomId, "READY");
-// 				io.emit("status-change", {
-// 					roomId: roomId,
-// 					newStatus: "READY",
-// 				});
-// 			} else {
-// 				io.to(socket.id).emit("error-message", validJoin[1]);
-// 			}
-// 		}
-// 	});
-// 	socket.on("start-duel", async ({ roomId }) => {
-// 		console.log("Timer Starting");
-// 		let duelState = await DuelManager.getDuelState(roomId);
-// 		if (duelState === "READY") {
-// 			let duel = await DuelManager.findDuel(roomId);
-// 			let timeLimit = duel.timeLimit;
-// 			const startTime = new Date();
-// 			const maxTime = timeLimit * 60000; // minutes to milliseconds
-// 			await DuelManager.startDuel(roomId);
-
-// 			console.log("Yo here we go again");
-// 			io.emit("status-change", { roomId: roomId, newStatus: "ONGOING" });
-// 			io.emit("problem-change", { roomId: roomId });
-// 			io.emit("time-left", { roomId: roomId, timeLeft: timeLimit * 60 });
-
-// 			let timeInterval;
-// 			let checkInterval;
-
-// 			checkInterval = setInterval(async () => {
-// 				await DuelManager.checkProblemSolves(roomId);
-// 				let duel = await DuelManager.findDuel(roomId);
-// 				if (
-// 					duel.playerOneSolves === duel.problems.length ||
-// 					duel.playerTwoSolves === duel.problems.length
-// 				) {
-// 					if (timeInterval) clearInterval(timeInterval);
-// 					if (checkInterval) clearInterval(checkInterval);
-// 					await DuelManager.finishDuel(roomId);
-// 					io.emit("status-change", {
-// 						roomId: roomId,
-// 						newStatus: "FINISHED",
-// 					});
-// 				}
-// 			}, 3000);
-// 			timeInterval = setInterval(async () => {
-// 				let timeLeft = await getTimeLeft(
-// 					startTime,
-// 					maxTime,
-// 					timeInterval,
-// 					checkInterval,
-// 					roomId,
-// 					io
-// 				);
-// 				io.emit("time-left", { roomId: roomId, timeLeft: timeLeft });
-// 			}, 1000);
-// 		}
-// 	});
-// 	socket.on("submit-problem", async ({ roomId, uid, submission }) => {
-// 		console.log(
-// 			`Duel ${roomId}, player with uid ${uid} is submitting a problem.`
-// 		);
-// 		try {
-// 			let duel = await DuelManager.findDuel(roomId);
-// 			let valid = false;
-// 			for (let i = 0; i < duel.players.length; i++) {
-// 				if (duel.players[i].uid === uid) valid = true;
-// 			}
-// 			if (valid) {
-// 				await DuelManager.submitProblem(roomId, uid, submission);
-// 				io.emit("problem-submitted-success", {
-// 					roomId: roomId,
-// 					uid: uid,
-// 				});
-// 			} else {
-// 				console.log(`Not a valid uid for submission to Duel ${roomId}`);
-// 				io.emit("problem-submitted-error", {
-// 					roomId: roomId,
-// 					uid: uid,
-// 					message: "You are not recognized as a duel participant",
-// 				});
-// 			}
-// 		} catch (e) {
-// 			console.log(`Error submitting problem in Duel ${roomId}: ${e}`);
-// 		}
-// 	});
-// });
+const taskManager = new TaskManager();
+await taskManager.init();
+const socketManager = new SocketManager(io);
+const duelManager = new DuelManager(taskManager, socketManager);
 
 export default db;
-
-// await TaskManager.updateProblemset();

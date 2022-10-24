@@ -23,14 +23,14 @@ duelsRouter.get("/:id", getDuel, (req, res) => {
 duelsRouter.post("/add", async (req, res) => {
   const duel = new duelModel(req.body);
   console.log(req.body);
-  let validDuel = true; // await DuelManager.isValidDuelRequest(
-  //   req.body.platform,
-  //   req.body.players,
-  //   req.body.problemCount,
-  //   req.body.ratingMin,
-  //   req.body.ratingMax,
-  //   req.body.timeLimit
-  // );
+  let validDuel = await DuelManager.isValidDuelRequest(
+    req.body.platform,
+    req.body.players,
+    req.body.problemCount,
+    req.body.ratingMin,
+    req.body.ratingMax,
+    req.body.timeLimit
+  );
   console.log(validDuel);
   try {
     if (validDuel[0]) {

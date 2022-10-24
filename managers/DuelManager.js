@@ -1,11 +1,15 @@
 import db from "../server.js";
 import CodeforcesAPI from "../utils/api/CodeforcesAPI.js";
 import { ObjectId } from "mongodb";
-import TaskManager from "./TaskManager.js";
 // import SubmissionManager from "./submissionsManager.js";
-import languages from "./languages.js";
+// import languages from "./languages.js";
 
 class DuelManager {
+  constructor(taskManager, socketManager) {
+    this.taskManager = taskManager;
+    this.socketManager = socketManager;
+  }
+
   static async getDuel(id) {
     try {
       let duels = await db
@@ -110,14 +114,7 @@ class DuelManager {
 
   static async addProblems(id) {
     let duel = await this.getDuel(id);
-    let usernames = [duel.players[0].username, duel.players[1].username];
-    let problems = await TaskManager.generateDuelProblems(
-      duel.platform,
-      duel.problemCount,
-      usernames,
-      duel.ratingMin,
-      duel.ratingMax
-    );
+    let problems = await this.taskManager.generateDuelProblems(duel);
 
     /* Points
         Each problem's points is equal to the amount of rating above the rating range minimum, plus 100
@@ -264,11 +261,11 @@ class DuelManager {
 
   static async checkProblemSolves(id) {
     let duel = await this.getDuel(id);
-    let playerOneSolves = await TaskManager.getUserSolves(
+    let playerOneSolves = await this.taskManager.getUserSolves(
       duel,
       duel.players[0].username
     );
-    let playerTwoSolves = await TaskManager.getUserSolves(
+    let playerTwoSolves = await this.taskManager.getUserSolves(
       duel,
       duel.players[1].username
     );
@@ -296,19 +293,7 @@ class DuelManager {
   static async submitProblem(id, uid, submission) {
     try {
       let duel = await this.getDuel(id);
-      let problem = duel.problems[submission.number - 1];
-      if (duel.platform === 'CF') {
-        await CodeforcesAPI.login();
-        await CodeforcesAPI.submitProblem(problem.contestId, problem.index, submission.content);
-      }
-      else if (duel.platform === 'AT') {
-        // await AtcoderAPI.login();
-        // await AtcoderAPI.submitProblem(problem.contestId, problem.index, submission.content);
-      }
-      else {
-        // await LeetcodeAPI.login();
-        //await LeetcodeAPI.submitProblem(problem.contestId, problem.index, submission.content);
-      }
+      await this.taskManager.submitProblem(duel, uid, submission);
       return [true];
     } catch (e) {
       console.log(
@@ -317,66 +302,6 @@ class DuelManager {
       return [false, e];
     }
   }
-
-  static async isValidJoinRequest(id, username) {
-    let duel = await this.getDuel(id);
-    if (duel.players.length === 2) {
-      // username multiple players joining at once
-      return [false, "Duel Full"];
-    }
-    let owner = duel.players[0];
-    if (owner.username === username) {
-      return [false, "Duplicate Usernames"];
-    }
-    let validUsername;
-    if (duel.platform === "CF") {
-      validUsername = await CodeforcesAPI.checkUsername(username);
-    } else if (duel.platform === "AT") {
-      // validUsername = await AtcoderAPI.checkUsername(username);
-    } else {
-      // validUsername = await LeetcodeAPI.checkUsername(username);
-    }
-    if (!validUsername[0]) {
-      return [false, validUsername[1]];
-    }
-    return [true];
-  }
-
-  static async isValidDuelRequest(
-    platform,
-    players,
-    problemCount,
-    ratingMin,
-    ratingMax,
-    timeLimit
-  ) {
-    let validPlatform =
-      platform === "CF" || platform === "AT" || platform === "LC";
-    if (!validPlatform) {
-      return [false, "Invalid Platform"];
-    }
-    let validProblemCount =
-      problemCount && problemCount >= 1 && problemCount <= 10;
-    if (!validProblemCount) {
-      return [false, "Invalid Problem Count"];
-    }
-    let validTimeLimit = timeLimit && timeLimit >= 5 && timeLimit <= 180;
-    if (!validTimeLimit) {
-      return [false, "Invalid Time Limit"];
-    }
-    let validParams;
-    if (platform === "CF") {
-      validParams = await CodeforcesAPI.checkDuelParams(players[0].username, ratingMin, ratingMax);
-    } else if (platform === "AT") {
-      // validParams = await AtcoderAPI.checkDuelParams(players[0].username, ratingMin, ratingMax);
-    } else {
-      // validParams = await LeetcodeAPI.checkDuelParams(players[0].username, ratingMin, ratingMax);
-    }
-    if (!validParams[0]) return [false, validParams[1]];
-    return [true];
-  }
-
-  static async isValidSubmitRequest(platform, uid, submission) {}
 }
 
 export default DuelManager;
