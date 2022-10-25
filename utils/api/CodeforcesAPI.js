@@ -127,16 +127,12 @@ class CodeforcesAPI {
 
 	//https://codeforces.com/contest/1729/submission/177820677
 
-	async getSubmissionDuelIds() {
-		let submissions = await this.getUserSubmissions("cpduels-bot");
-		submissions.forEach(async (submission) => {
-			let source = await this.getSubmissionSource(
-				submission.contestId,
-				submission.id
-			);
-			this.getDuelIdfromSource(source);
-			console.log("🚀 ~ file: CodeforcesAPI.js ~ line 138 ~ CodeforcesAPI ~ submissions.forEach ~ this.getDuelIdfromSource(source)", this.getDuelIdfromSource(source))
-		});
+	async getSubmissionDuelId(submission) {
+		let source = await this.getSubmissionSource(
+			submission.contestId,
+			submission.id
+		);
+		return this.getDuelIdfromSource(source);
 	}
 
 	async getSubmissionSource(contestId, id) {
