@@ -55,9 +55,10 @@ await taskManager.init();
 // 		await sleep(1000);
 // 	}
 // 	// await api.login();
-// 	// await api.submitProblem(1729, "f", "fresh", 43, "27asdi38dj");
+// 	// await api.submitProblem(1729, "f", "superfresh", 43, "634afc17d129402bba140f0c");
 // 	// console.log(await api.getUserSubmissions("cpduels-bot"));
 // 	// await api.getSubmissionById(177820677, 1729);
+// 	// await api.getSubmissionDuelIds();
 // }, 10000);
 const socketManager = new SocketManager(io);
 const duelManager = new DuelManager(taskManager, socketManager);

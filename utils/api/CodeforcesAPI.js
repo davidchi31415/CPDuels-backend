@@ -118,14 +118,28 @@ class CodeforcesAPI {
 		}
 	}
 
-	fromComment(text) {
+	getDuelIdfromSource(text) {
 		let re = /[a-z0-9]{24}/gs;
-		return text.match(re);
+		let comment = text.split(/\r?\n|\r|\n/g)[0];
+		console.log(comment);
+		return comment.match(re);
 	}
 
 	//https://codeforces.com/contest/1729/submission/177820677
 
-	async getSubmissionById(id, contestId) {
+	async getSubmissionDuelIds() {
+		let submissions = await this.getUserSubmissions("cpduels-bot");
+		submissions.forEach(async (submission) => {
+			let source = await this.getSubmissionSource(
+				submission.contestId,
+				submission.id
+			);
+			this.getDuelIdfromSource(source);
+			console.log("🚀 ~ file: CodeforcesAPI.js ~ line 138 ~ CodeforcesAPI ~ submissions.forEach ~ this.getDuelIdfromSource(source)", this.getDuelIdfromSource(source))
+		});
+	}
+
+	async getSubmissionSource(contestId, id) {
 		let url = `https://codeforces.com/contest/${contestId}/submission/${id}`;
 		let res = await this.client.get(url);
 		const $ = cheerio.load(res.text);
