@@ -2,6 +2,8 @@ import fetch from "node-fetch";
 import TaskManager from "../../managers/TaskManager.js";
 import { sleep } from "../helpers/sleep.js";
 import cheerio from "cheerio";
+import db from "../../server.js";
+import { ObjectId } from "mongodb";
 
 class CodeforcesAPI {
 	constructor(taskManager) {
@@ -118,28 +120,52 @@ class CodeforcesAPI {
 		}
 	}
 
-	getDuelIdfromSource(text) {
-		let re = /[a-z0-9]{24}/gs;
-		let comment = text.split(/\r?\n|\r|\n/g)[0];
-		console.log(comment);
-		return comment.match(re);
-	}
-
 	//https://codeforces.com/contest/1729/submission/177820677
 
-	async getSubmissionDuelId(submission) {
+	async getSubmissionDuelArray() {
+		let submissions = await this.getUserSubmissions("cpduels-bot");
+		submissions.forEach(async (submission) => {
+			let duelId, playerNum;
+			let info = await this.getSubmissionUserInfo(submission);
+			if (info) {
+				({ duelId, playerNum } = info);
+				console.log(`Submission ${submission.id} has id:${duelId}`);
+			} else {
+				console.log(`Submission ${submission.id} has invalid info`);
+			}
+		});
+	}
+
+	async getSubmissionUserInfo(submission) {
 		let source = await this.getSubmissionSource(
 			submission.contestId,
 			submission.id
 		);
-		return this.getDuelIdfromSource(source);
+		try {
+			return this.getSubmissionInfoFromSource(source);
+		} catch {
+			return 0;
+		}
 	}
 
 	async getSubmissionSource(contestId, id) {
 		let url = `https://codeforces.com/contest/${contestId}/submission/${id}`;
+		console.log("bruh");
 		let res = await this.client.get(url);
+
 		const $ = cheerio.load(res.text);
 		return $('pre[id="program-source-text"]').text();
+	}
+
+	getSubmissionInfoFromSource(text) {
+		let re = /[a-z0-9]{25}/gs;
+		let comment = text.split(/\r?\n|\r|\n/g)[0];
+		// console.log(comment);
+		let totalResult = comment.match(re)[0];
+		return {
+			duelId: totalResult.slice(0, 24),
+			playerNum: totalResult.slice(24, 25),
+		};
 	}
 
 	async submitProblem(
@@ -147,12 +173,13 @@ class CodeforcesAPI {
 		problemIndex,
 		sourceCode,
 		programTypeId,
-		duelId
+		duelId,
+		playerNum
 	) {
 		try {
 			sourceCode = `${this.toComment(
 				programTypeId,
-				duelId
+				`${duelId}${playerNum}`
 			)}\n${sourceCode}`;
 			let resp = await this.client.get(
 				`https://codeforces.com/contest/${contestId}/submit`
@@ -173,6 +200,12 @@ class CodeforcesAPI {
 					sourceCodeConfirmed: "true",
 				},
 			]);
+			// Add submission to database
+			await db.collection("submission").insertOne({
+				platform: "CF",
+				duelId: duelId,
+				playerNum: playerNum,
+			});
 			console.log(`Submitted solution for ${contestId}${problemIndex}`);
 		} catch (err) {
 			console.log(

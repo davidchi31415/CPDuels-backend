@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { mongo } from 'mongoose';
 
 const cfproblemSchema = mongoose.Schema({
   contestId: {
@@ -174,8 +174,29 @@ const duelSchema = mongoose.Schema({
   }
 });
 
+const submissionSchema = mongoose.Schema({
+  platform: {
+    type: String,
+    required: true
+  },
+  duelId: {
+    type: String,
+    required: true
+  },
+  playerNum: {
+    type: Number,
+    required: true
+  },
+  status: {
+    type: String,
+    required: true,
+    default: "PENDING" // WA, AC, RTE
+  }
+});
+
 export const cfproblemModel = mongoose.models.CFProblem ? mongoose.model.CFProblem : mongoose.model('CFProblem', cfproblemSchema);
 export const playerModel = mongoose.models.playerModel ? mongoose.models.playerModel : mongoose.model('Player', playerSchema);
 const duelModel = mongoose.models.duelModel ? mongoose.models.duelModel : mongoose.model('Duel', duelSchema);
+export const submissionModel = mongoose.models.submissionModel ? mongoose.models.submissionModel : mongoose.model('Submission', submissionSchema);
 
 export default duelModel;

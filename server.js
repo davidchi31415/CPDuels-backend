@@ -47,7 +47,17 @@ const io = new Server(
 
 const taskManager = new TaskManager();
 await taskManager.init();
-// const api = new CodeforcesAPI(taskManager);
+const api = new CodeforcesAPI(taskManager);
+let s = {
+	id: 177930370,
+	contestId: 1729,
+	index: "F",
+	name: "Kirei and the Linear Function",
+	type: "PROGRAMMING",
+	rating: 1900,
+	creationTimeSeconds: 1666678161,
+	verdict: "COMPILATION_ERROR",
+};
 
 // setInterval(async function () {
 // 	console.log(taskManager.wProx);
@@ -55,10 +65,11 @@ await taskManager.init();
 // 		await sleep(1000);
 // 	}
 // 	// await api.login();
-// 	// await api.submitProblem(1729, "f", "superfresh", 43, "634afc17d129402bba140f0c");
+// 	// await api.submitProblem(1729, "f", "asdfasdfasdfasdf", 7, "634afc17d129402bba140000",2);
 // 	// console.log(await api.getUserSubmissions("cpduels-bot"));
 // 	// await api.getSubmissionById(177820677, 1729);
-// 	// await api.getSubmissionDuelIds();
+// 	// console.log(await api.getUserSubmissions("cpduels-bot"));
+// 	console.log(await api.getSubmissionDuelArray());
 // }, 10000);
 const socketManager = new SocketManager(io);
 const duelManager = new DuelManager(taskManager, socketManager);
