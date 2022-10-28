@@ -58,19 +58,27 @@ let s = {
 	creationTimeSeconds: 1666678161,
 	verdict: "COMPILATION_ERROR",
 };
+let ss = {
+	platform: "CF",
+	duelId: 177930370,
+	playerNum: 2,
+	status: "COMPILATION_ERROR",
+};
 
 // setInterval(async function () {
 // 	console.log(taskManager.wProx);
 // 	while (taskManager.wProx.length == 0) {
 // 		await sleep(1000);
 // 	}
+// 	// await api.updateSubmissionStatus("6359d9fbdca5b34c3617bf7a", "ACCEPT");
 // 	// await api.login();
-// 	// await api.submitProblem(1729, "f", "asdfasdfasdfasdf", 7, "634afc17d129402bba140000",2);
+// 	// await api.submitProblem(1729, "f", "hm", 7, "634afc17d129402bba140000", 2);
 // 	// console.log(await api.getUserSubmissions("cpduels-bot"));
 // 	// await api.getSubmissionById(177820677, 1729);
 // 	// console.log(await api.getUserSubmissions("cpduels-bot"));
-// 	console.log(await api.getSubmissionDuelArray());
-// }, 10000);
+// 	// console.log(await api.updateSubmissions());
+// 	// await db.collection("submissions").insertOne(ss);
+// }, 20000);
 const socketManager = new SocketManager(io);
 const duelManager = new DuelManager(taskManager, socketManager);
 

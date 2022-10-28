@@ -49,7 +49,7 @@ class TaskManager {
 				await superagent
 					.get("https://httpbin.org/ip?json")
 					.proxy(urlProxy)
-					.timeout({ response: 5000, deadline: 5000 })
+					.timeout({ response: 2000, deadline: 2500 })
 					.then((err) => {
 						result.push(urlProxy);
 						// console.log(`${urlProxy} passed`);
@@ -95,9 +95,9 @@ class TaskManager {
 	async proxyGet(URL) {
 		let proxy = this.getRandom(this.wProx);
 		let userAgent = this.getRandom(this.useragents);
-		console.log(`User-Agent: ${userAgent}`);
-		console.log(`Proxy: ${proxy}`);
-		console.log(`url: ${URL}`);
+		// console.log(`User-Agent: ${userAgent}`);
+		// console.log(`Proxy: ${proxy}`);
+		// console.log(`url: ${URL}`);
 		return await this.client
 			.get(URL)
 			.set("User-agent", userAgent)
