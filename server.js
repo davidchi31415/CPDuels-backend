@@ -72,13 +72,14 @@ let ss = {
 // 	}
 // 	// await api.updateSubmissionStatus("6359d9fbdca5b34c3617bf7a", "ACCEPT");
 // 	// await api.login();
-// 	// await api.submitProblem(1729, "f", "hm", 7, "634afc17d129402bba140000", 2);
+// 	// await api.submitProblem(1729, "f", "this is a new submission3", 7, "634afc17d129402bba100000", 2);
+// 	// await api.submitProblem(1729, "f", "this is a new submission3", 7, "634afc17d129402bba111111", 2);
 // 	// console.log(await api.getUserSubmissions("cpduels-bot"));
 // 	// await api.getSubmissionById(177820677, 1729);
 // 	// console.log(await api.getUserSubmissions("cpduels-bot"));
 // 	// console.log(await api.updateSubmissions());
 // 	// await db.collection("submissions").insertOne(ss);
-// }, 20000);
+// }, 10000);
 const socketManager = new SocketManager(io);
 const duelManager = new DuelManager(taskManager, socketManager);
 

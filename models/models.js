@@ -196,7 +196,6 @@ const submissionSchema = mongoose.Schema({
 	},
 	submissionsId: {
 		type: String,
-		required: true,
 	},
 	status: {
 		type: String,

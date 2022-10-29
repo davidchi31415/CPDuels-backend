@@ -121,52 +121,64 @@ class CodeforcesAPI {
 
 	//https://codeforces.com/contest/1729/submission/177820677
 
+	async getPendingSubmissionsFromDatabase() {
+		let result = await db
+			.collection("submissions")
+			.find(
+				{
+					status: "PENDING",
+				},
+				{}
+			)
+			.toArray();
+		return result;
+	}
+
 	async updateSubmissions() {
+		let dbSubmissions = await this.getPendingSubmissionsFromDatabase();
 		let submissions = await this.getUserSubmissions("cpduels-bot");
-		submissions.forEach(async (submission) => {
+		let submissionCounter = dbSubmissions.length;
+		for (let i = 0; i < submissions.length; i++) {
+			if (submissionCounter === 0) break; // If there are no PENDING submissions, don't check
+			let submission = submissions[i];
 			let duelId, playerNum;
 			let info = await this.getSubmissionUserInfo(submission);
+			let verdict = submission.verdict ? submission.verdict : "PENDING";
 			if (info) {
 				console.log(info);
 				({ duelId, playerNum } = info);
 				let findSubmission = await db
 					.collection("submissions")
 					.find(
-						{},
 						{
 							duelId: duelId,
-							submissionsId: submission.id,
-						}
+							playerNum: playerNum,
+						},
+						{}
 					)
 					.toArray();
 				// console.log(findSubmission);
 				if (findSubmission.length != 0) {
 					// update submission
+					if (findSubmission[0].status !== "PENDING") continue; // Only update if it is a pending submission
 					await db.collection("submissions").findOneAndUpdate(
 						{
 							duelId: duelId,
-							submissionId: submission.id,
 						},
 						{
 							$set: {
-								status: submission.verdict,
+								status: verdict,
+								submissionId: submission.id,
 							},
 						}
 					);
+					submissionCounter--; // Mark off the submission (from pending submissions we were looking for)
 					console.log(
 						`Updated player ${playerNum}'s submission with id ${submission.id} in duel ${duelId} to ${submission.verdict}`
 					);
 				} else {
-					// Add submission to database
-					await db.collection("submissions").insertOne({
-						platform: "CF",
-						duelId: duelId,
-						playerNum: playerNum,
-						submissionId: submission.id,
-						status: submission.verdict,
-					});
 					console.log(
-						`Added new submission ${submission.id} for ${duelId} player ${playerNum}`
+						`No player/duel info on submission ${submission.id}`
 					);
 				}
 			} else {
@@ -174,7 +186,7 @@ class CodeforcesAPI {
 					`Submission ${submission.id} has invalid info ${info}`
 				);
 			}
-		});
+		}
 	}
 
 	async getSubmissionUserInfo(submission) {
@@ -209,7 +221,7 @@ class CodeforcesAPI {
 		let totalResult = comment.match(re)[0];
 		return {
 			duelId: totalResult.slice(0, 24),
-			playerNum: totalResult.slice(24, 25),
+			playerNum: parseInt(totalResult.slice(24, 25)),
 		};
 	}
 
@@ -229,9 +241,9 @@ class CodeforcesAPI {
 			let resp = await this.client.get(
 				`https://codeforces.com/contest/${contestId}/submit`
 			);
-			let csrf = this.taskManager.findCsrf(resp.text);
+			let csrf = await this.taskManager.findCsrf(resp.text);
 			let submitUrl = `https://codeforces.com/contest/${contestId}/submit?csrf_token=${csrf}`;
-			await this.taskManager.proxyPost([
+			let res = await this.taskManager.proxyPost([
 				submitUrl,
 				{
 					csrf_token: csrf,
@@ -245,8 +257,20 @@ class CodeforcesAPI {
 					sourceCodeConfirmed: "true",
 				},
 			]);
-
-			console.log(`Submitted solution for ${contestId}${problemIndex}`);
+			
+			const $ = cheerio.load(res.text);
+			const error = $('span[class="error for__source"]').text();
+			if (error !== "") throw error;
+			else {
+				await db.collection("submissions").insertOne({
+					platform: "CF",
+					duelId: duelId,
+					playerNum: playerNum,
+					status: "PENDING",
+				});
+	
+				console.log(`Submitted solution for ${contestId}${problemIndex}`);
+			}
 		} catch (err) {
 			console.log(
 				`Submitting solution for ${contestId}${problemIndex} Failed: \n ${err}`
