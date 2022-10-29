@@ -47,23 +47,6 @@ const io = new Server(
 
 const taskManager = new TaskManager();
 await taskManager.init();
-const api = new CodeforcesAPI(taskManager);
-let s = {
-	id: 177930370,
-	contestId: 1729,
-	index: "F",
-	name: "Kirei and the Linear Function",
-	type: "PROGRAMMING",
-	rating: 1900,
-	creationTimeSeconds: 1666678161,
-	verdict: "COMPILATION_ERROR",
-};
-let ss = {
-	platform: "CF",
-	duelId: 177930370,
-	playerNum: 2,
-	status: "COMPILATION_ERROR",
-};
 
 // setInterval(async function () {
 // 	console.log(taskManager.wProx);

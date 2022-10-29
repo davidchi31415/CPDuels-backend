@@ -1,3 +1,5 @@
+import DuelManager from './DuelManager.js';
+
 class SocketManager {
   constructor(io) {
     this.io = io;
