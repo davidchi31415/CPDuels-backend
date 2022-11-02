@@ -43,7 +43,8 @@ const io = new Server(
 );
 
 const socketManager = new SocketManager(io);
-// let api = new CodeforcesAPI(taskManager);
+// let api = new CodeforcesAPI();
+// await api.login();
 
 // let q = new Queue();
 

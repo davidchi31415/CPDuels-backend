@@ -363,6 +363,7 @@ class DuelManager {
 	}
 
 	async submitProblem(id, uid, submission) {
+		console.log("trying to submit problem");
 		try {
 			let duel = await this.getDuel(id);
 			await this.taskManager.submitProblem(duel, uid, submission);

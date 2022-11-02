@@ -1,12 +1,12 @@
 import DuelManager from "./DuelManager.js";
 import TaskManager from "./TaskManager.js";
-import CodeforcesAPI from "../utils/api/codeforcesAPI.js";
+import CodeforcesAPI from "../utils/api/CodeforcesAPI.js";
 
 class SocketManager {
 	constructor(io) {
-		const taskManager = new TaskManager();
+    const codeforcesAPI = new CodeforcesAPI();
+		const taskManager = new TaskManager(codeforcesAPI);
 		taskManager.init();
-		const codeforcesAPI = new CodeforcesAPI(taskManager);
 		const duelManager = new DuelManager(codeforcesAPI, taskManager);
 		this.io = io;
 		io.on("connection", async (socket) => {
