@@ -1,5 +1,5 @@
 import DEBUG from './debug.js';
 
-const allowedOrigins = DEBUG ? 'http://localhost:3000' : 'https://cpduels-backend-production.up.railway.app';
+const allowedOrigins = DEBUG ? 'http://localhost:3000' : 'https://cpduels.com';
 
 export default allowedOrigins;

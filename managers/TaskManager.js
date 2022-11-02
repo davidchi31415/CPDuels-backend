@@ -7,7 +7,7 @@ class TaskManager {
 	}
 	async init() {
 		const checker = async function () {
-			console.log(this.queue);
+			// console.log(this.queue);
 			if (this.queue.size()) {
 				let obj = this.queue.dequeue();
 				if (obj[0] == "submit") {
