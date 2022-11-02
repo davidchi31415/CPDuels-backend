@@ -6,10 +6,7 @@ import { Server } from "socket.io";
 import allowedOrigins from "./config/origins.js";
 import { sleep } from "./utils/helpers/sleep.js";
 import cors from "cors";
-import TaskManager from "./managers/TaskManager.js";
 import SocketManager from "./managers/SocketManager.js";
-import DuelManager from "./managers/DuelManager.js";
-import CodeforcesAPI from "./utils/api/codeforcesAPI.js";
 
 const app = express();
 var corsOptions = {
@@ -45,25 +42,42 @@ const io = new Server(
 	})
 );
 
-const taskManager = new TaskManager();
-await taskManager.init();
+const socketManager = new SocketManager(io);
+// let api = new CodeforcesAPI(taskManager);
+
+// let q = new Queue();
+
+// let a = [
+// 	"submit",
+// 	{
+// 		contestId: 1729,
+// 		problemIndex: "f",
+// 		sourceCode: "thisis a new sub",
+// 		programTypeId: 7,
+// 		duelId: "634afc17d129402bba111111",
+// 		playerNum: 2,
+// 	},
+// ];
+// q.enqueue(a);
+// console.log(q);
 
 // setInterval(async function () {
-// 	console.log(taskManager.wProx);
-// 	while (taskManager.wProx.length == 0) {
-// 		await sleep(1000);
-// 	}
+// 	// console.log(taskManager.wProx);
+// 	// while (taskManager.wProx.length == 0) {
+// 	// 	await sleep(1000);
+// 	// }
+// 	// await api.updateSubmissions();
 // 	// await api.updateSubmissionStatus("6359d9fbdca5b34c3617bf7a", "ACCEPT");
+// 	let check = await taskManager.get("https://codeforces.com/enter/");
+// 	console.log(check.text.match("unavailable.")[0]);
 // 	// await api.login();
-// 	// await api.submitProblem(1729, "f", "this is a new submission3", 7, "634afc17d129402bba100000", 2);
-// 	// await api.submitProblem(1729, "f", "this is a new submission3", 7, "634afc17d129402bba111111", 2);
+// 	// await api.submitProblem(1729, "f", "this is anewsubmision2", 7, "634afc17d129402bba100000", 2);
+// 	// await api.submitProblem(1729, "f", "thisforsureanewSUbmisions2", 7, "634afc17d129402bba111111", 2);
 // 	// console.log(await api.getUserSubmissions("cpduels-bot"));
 // 	// await api.getSubmissionById(177820677, 1729);
 // 	// console.log(await api.getUserSubmissions("cpduels-bot"));
 // 	// console.log(await api.updateSubmissions());
 // 	// await db.collection("submissions").insertOne(ss);
 // }, 10000);
-const socketManager = new SocketManager(io);
-const duelManager = new DuelManager(taskManager, socketManager);
 
 export default db;

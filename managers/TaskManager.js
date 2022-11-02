@@ -2,22 +2,38 @@ import CodeforcesAPI from "../utils/api/codeforcesAPI.js";
 import db from "../server.js";
 import superagent from "superagent";
 import enableProxy from "superagent-proxy";
+import Queue from "../utils/helpers/queue.js";
 enableProxy(superagent);
 
 class TaskManager {
 	constructor() {
 		this.client = superagent.agent();
-		this.codeforcesAPI = new CodeforcesAPI(this);
+		this.queue = new Queue();
 		this.useragents = [];
 		this.proxies = [];
 		this.wProx = [];
 		this.currentProxIndex = 0;
 	}
 	async init() {
-		this.useragents = await this.getUserAgents();
-		this.proxies = await this.getProxies();
+		// this.useragents = await this.getUserAgents();
+		// this.proxies = await this.getProxies();
 
-		setInterval(this.updateProxies.bind(this), 5000);
+		// setInterval(this.updateProxies.bind(this), 5000);
+
+		const checker = async function () {
+			console.log(this.queue);
+			if (this.queue.size()) {
+				let obj = this.queue.dequeue();
+				if (obj[0] == "submit") {
+					await submitProblem(
+						obj[1].duel,
+						obj[1].uid,
+						obj[1].submission
+					);
+				}
+			}
+		};
+		setInterval(checker.bind(this), 5000);
 	}
 
 	async updateProxies() {
@@ -49,7 +65,7 @@ class TaskManager {
 				await superagent
 					.get("https://httpbin.org/ip?json")
 					.proxy(urlProxy)
-					.timeout({ response: 2000, deadline: 2500 })
+					.timeout({ response: 1500, deadline: 2000 })
 					.then((err) => {
 						result.push(urlProxy);
 						// console.log(`${urlProxy} passed`);
@@ -103,6 +119,16 @@ class TaskManager {
 			.set("User-agent", userAgent)
 			.proxy(proxy);
 	}
+	static async get(URL) {
+		console.log("asdf");
+		return await this.client.get(URL);
+	}
+	static async post(data) {
+		return await this.client
+			.post(data[0])
+			.send(data[1])
+			.set("Content-Type", "application/x-www-form-urlencoded");
+	}
 
 	async proxyPost(data) {
 		let proxy = this.getRandom(this.wProx);
@@ -119,69 +145,9 @@ class TaskManager {
 	}
 
 	async updateProblemsets() {
-		await this.codeforcesAPI.updateProblemsInDatabase();
+		await CodeforcesAPI.updateProblemsInDatabase();
 		// await this.atcoderAPI.updateProblemsInDatabase();
 		// await this.leetcodeAPI.updateProblemsInDatabase();
-	}
-
-	// Duel Management
-
-	async isValidDuelRequest(
-		platform,
-		players,
-		problemCount,
-		ratingMin,
-		ratingMax,
-		timeLimit
-	) {
-		let validProblemCount =
-			problemCount && problemCount >= 1 && problemCount <= 10;
-		if (!validProblemCount) {
-			return [false, "Invalid Problem Count"];
-		}
-		let validTimeLimit = timeLimit && timeLimit >= 5 && timeLimit <= 180;
-		if (!validTimeLimit) {
-			return [false, "Invalid Time Limit"];
-		}
-		let validParams;
-		if (platform === "CF") {
-			validParams = await this.codeforcesAPI.checkDuelParams(
-				players[0].username,
-				ratingMin,
-				ratingMax
-			);
-		} else if (platform === "AT") {
-			// validParams = await AtcoderAPI.checkDuelParams(players[0].username, ratingMin, ratingMax);
-		} else if (platform === "LC") {
-			// validParams = await LeetcodeAPI.checkDuelParams(players[0].username, ratingMin, ratingMax);
-		} else {
-			return [false, "Invalid Platform"];
-		}
-		if (!validParams[0]) return [false, validParams[1]];
-		return [true];
-	}
-
-	async isValidJoinRequest(duel, username) {
-		if (duel.players.length === 2) {
-			// username multiple players joining at once
-			return [false, "Duel Full"];
-		}
-		let owner = duel.players[0];
-		if (owner.username === username) {
-			return [false, "Duplicate Usernames"];
-		}
-		let validUsername;
-		if (duel.platform === "CF") {
-			validUsername = await this.codeforcesAPI.checkUsername(username);
-		} else if (duel.platform === "AT") {
-			// validUsername = await AtcoderAPI.checkUsername(username);
-		} else {
-			// validUsername = await LeetcodeAPI.checkUsername(username);
-		}
-		if (!validUsername[0]) {
-			return [false, validUsername[1]];
-		}
-		return [true];
 	}
 
 	/*
@@ -191,8 +157,8 @@ class TaskManager {
 	async createDuelProblems(duel) {
 		let usernames = [duel.players[0].username, duel.players[1].username];
 		let problems;
-		if (platform === "CF") {
-			problems = await this.codeforcesAPI.generateProblems(
+		if (duel.platform === "CF") {
+			problems = await CodeforcesAPI.generateProblems(
 				duel.problemCount,
 				usernames,
 				duel.ratingMin,
@@ -208,11 +174,22 @@ class TaskManager {
 		return problems;
 	}
 
+	async taskSubmit(duel, uid, submission) {
+		this.queue.enqueue([
+			"submit",
+			{
+				duel: duel,
+				uid: uid,
+				submission: submission,
+			},
+		]);
+	}
+
 	async submitProblem(duel, uid, submission) {
 		let problem = duel.problems[submission.number - 1];
 		if (duel.platform === "CF") {
-			await this.codeforcesAPI.login();
-			await this.codeforcesAPI.submitProblem(
+			await CodeforcesAPI.login();
+			await CodeforcesAPI.submitProblem(
 				problem.contestId,
 				problem.index,
 				submission.content
@@ -228,7 +205,7 @@ class TaskManager {
 
 	async getUserSolves(duel, username) {
 		let filteredSubmissions =
-			await this.codeforcesAPI.getUserSubmissionsAfterTime(
+			await CodeforcesAPI.getUserSubmissionsAfterTime(
 				username,
 				duel.startTime
 			);
