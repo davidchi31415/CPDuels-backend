@@ -19,7 +19,7 @@ class TaskManager {
 				}
 			}
 		};
-		setInterval(checker.bind(this), 5000);
+		setInterval(checker.bind(this), 1000);
 	}
 
 	async updateProblemsets() {
