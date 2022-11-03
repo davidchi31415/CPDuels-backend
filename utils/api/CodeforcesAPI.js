@@ -105,26 +105,54 @@ class CodeforcesAPI {
 			console.log(`Login failed: \n ${err}`);
 		}
 	}
-
 	toComment(programTypeId, text) {
 		if (
 			[
-				43, 52, 50, 54, 59, 61, 65, 9, 28, 32, 36, 48, 3, 4, 51, 6, 49,
-				20, 34, 55,
+				65,
+				79,
+				9, // C#
+				28, // D
+				32, // Go
+				60,
+				74,
+				36, // Java
+				48,
+				72,
+				77, //Kotlin
+				3, // Delphi 7
+				4,
+				51, //Pascal
+				6, // PHP
+				75, // Rust
+				20, // Scala
+				34,
+				55, // Javascript
 			].includes(programTypeId)
 		) {
 			return `// ${text}`;
 		}
 
-		if ([13, 7, 31, 40, 41, 67].includes(programTypeId)) {
+		if (
+			[
+				13, // Perl #
+				7,
+				31,
+				40,
+				41,
+				70, // Python #
+				67, // Ruby #
+			].includes(programTypeId)
+		) {
 			return `# ${text}`;
 		}
 
 		if (programTypeId === 12) {
+			// Haskell --
 			return `-- ${text}`;
 		}
 
 		if (programTypeId === 19) {
+			// Ocaml ['(*','*)']
 			return `(* ${text} *)`;
 		}
 	}
@@ -414,11 +442,7 @@ class CodeforcesAPI {
 		return result;
 	}
 
-	async getProblemsByUsernamesAndRating(
-		usernames,
-		ratingMin,
-		ratingMax
-	) {
+	async getProblemsByUsernamesAndRating(usernames, ratingMin, ratingMax) {
 		console.log(
 			`rating min : ${ratingMin} and the rating max is ${ratingMax}`
 		);
@@ -446,12 +470,7 @@ class CodeforcesAPI {
 		return filteredProblems;
 	}
 
-	async generateProblems(
-		numProblems,
-		usernames,
-		ratingMin,
-		ratingMax
-	) {
+	async generateProblems(numProblems, usernames, ratingMin, ratingMax) {
 		let problems = await this.getProblemsByUsernamesAndRating(
 			usernames,
 			ratingMin,

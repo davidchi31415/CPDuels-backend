@@ -1,6 +1,5 @@
 import db from "../server.js";
 import { ObjectId } from "mongodb";
-// import SubmissionManager from "./submissionsManager.js";
 // import languages from "./languages.js";
 
 class DuelManager {

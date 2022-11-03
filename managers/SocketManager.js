@@ -4,7 +4,7 @@ import CodeforcesAPI from "../utils/api/CodeforcesAPI.js";
 
 class SocketManager {
 	constructor(io) {
-    const codeforcesAPI = new CodeforcesAPI();
+		const codeforcesAPI = new CodeforcesAPI();
 		const taskManager = new TaskManager(codeforcesAPI);
 		taskManager.init();
 		const duelManager = new DuelManager(codeforcesAPI, taskManager);
@@ -81,7 +81,7 @@ class SocketManager {
 							checkInterval,
 							roomId,
 							io,
-              duelManager
+							duelManager
 						);
 						io.emit("time-left", {
 							roomId: roomId,
@@ -94,6 +94,8 @@ class SocketManager {
 				console.log(
 					`Duel ${roomId}, player with uid ${uid} is submitting a problem.`
 				);
+				
+				console.log(submission.languageCode);
 				try {
 					let duel = await duelManager.getDuel(roomId);
 					let valid = false;
@@ -102,7 +104,7 @@ class SocketManager {
 					}
 					if (valid) {
 						await duelManager.submitProblem(
-							roomId,
+							duel,
 							uid,
 							submission
 						);
@@ -130,7 +132,15 @@ class SocketManager {
 		});
 	}
 
-	async getTimeLeft(startTime, maxTime, timeInterval, checkInterval, roomId, io, duelManager) {
+	async getTimeLeft(
+		startTime,
+		maxTime,
+		timeInterval,
+		checkInterval,
+		roomId,
+		io,
+		duelManager
+	) {
 		const curTime = new Date();
 		let timeDifference = Math.abs(curTime.getTime() - startTime.getTime());
 		if (timeDifference >= maxTime) {

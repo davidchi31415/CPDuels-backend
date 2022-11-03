@@ -1,4 +1,6 @@
+import duelModel from "../models/models.js";
 import Queue from "../utils/helpers/queue.js";
+import DuelManager from "./DuelManager.js";
 
 class TaskManager {
 	constructor(codeforcesAPI) {
@@ -64,6 +66,12 @@ class TaskManager {
 	}
 
 	async submitProblem(duel, uid, submission) {
+		// submission: {
+		// 	languageCode: chosenLanguage,
+		// 	number: problemNum,
+		// 	content: fileContent.current,
+		//   },
+		console.log(duel);
 		let problem = duel.problems[submission.number - 1];
 		if (duel.platform === "CF") {
 			await this.codeforcesAPI.login();
@@ -71,6 +79,22 @@ class TaskManager {
 				problem.contestId,
 				problem.index,
 				submission.content
+			);
+			// async submitProblem(
+			// 	contestId,
+			// 	problemIndex,
+			// 	sourceCode,
+			// 	programTypeId,
+			// 	duelId,
+			// 	playerNum
+			// )
+			this.codeforcesAPI.submitProblem(
+				problem.contestId,
+				problem.index,
+				submission.content,
+				submission.languageCode,
+				duel._id,
+				uid
 			);
 		} else if (duel.platform === "AT") {
 			// await AtcoderAPI.login();
