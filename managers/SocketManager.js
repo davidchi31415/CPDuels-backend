@@ -58,7 +58,7 @@ class SocketManager {
 					let checkInterval;
 
 					checkInterval = setInterval(async () => {
-						await duelManager.checkProblemSolves(roomId);
+						// await duelManager.checkProblemSolves(roomId);
 						let duel = await duelManager.getDuel(roomId);
 						if (
 							duel.playerOneSolves === duel.problems.length ||
@@ -94,20 +94,17 @@ class SocketManager {
 				console.log(
 					`Duel ${roomId}, player with uid ${uid} is submitting a problem.`
 				);
-				
+
 				console.log(submission.languageCode);
 				try {
+					console.log(roomId);
 					let duel = await duelManager.getDuel(roomId);
 					let valid = false;
 					for (let i = 0; i < duel.players.length; i++) {
 						if (duel.players[i].uid === uid) valid = true;
 					}
 					if (valid) {
-						await duelManager.submitProblem(
-							duel,
-							uid,
-							submission
-						);
+						await duelManager.submitProblem(duel, uid, submission);
 						io.emit("problem-submitted-success", {
 							roomId: roomId,
 							uid: uid,

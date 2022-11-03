@@ -13,6 +13,7 @@ class Queue {
 	dequeue() {
 		if (this.last > this.first) {
 			var value = this.storage[this.first];
+			delete this.storage[this.first];
 			this.first++;
 			return value;
 		} else {

@@ -8,6 +8,8 @@ import { sleep } from "./utils/helpers/sleep.js";
 import cors from "cors";
 import SocketManager from "./managers/SocketManager.js";
 import CodeforcesAPI from "./utils/api/CodeforcesAPI.js";
+import DuelManager from "./managers/DuelManager.js";
+import TaskManager from "./managers/TaskManager.js";
 
 const app = express();
 var corsOptions = {
@@ -44,6 +46,7 @@ const io = new Server(
 );
 
 const socketManager = new SocketManager(io);
+
 // let api = new CodeforcesAPI();
 
 // let q = new Queue();
@@ -61,8 +64,14 @@ const socketManager = new SocketManager(io);
 // ];
 // q.enqueue(a);
 // console.log(q);
+// const codeforcesAPI = new CodeforcesAPI();
+// const taskManager = new TaskManager(codeforcesAPI);
+// taskManager.init();
+// const duelManager = new DuelManager(codeforcesAPI, taskManager);
 
 // setInterval(async function () {
+// 	let duel = await duelManager.getDuel("6364245cc794c96fbd0dd096");
+// 	console.log(duel);
 // 	// console.log(taskManager.wProx);
 // 	// while (taskManager.wProx.length == 0) {
 // 	// 	await sleep(1000);
@@ -71,8 +80,8 @@ const socketManager = new SocketManager(io);
 // 	// await api.updateSubmissionStatus("6359d9fbdca5b34c3617bf7a", "ACCEPT");
 // 	// let check = await taskManager.get("https://codeforces.com/enter/");
 // 	// console.log(check.text.match("unavailable.")[0]);
-// 	await api.login();
-// 	await api.submitProblem(1729, "f", "this is anewsubmision2", 7, "634afc17d129402bba100000", 2);
+// 	// await api.login();
+// 	// await api.submitProblem(1729, "f", "this is anewsubmision2", 7, "634afc17d129402bba100000", 2);
 // 	// await api.submitProblem(1729, "f", "thisforsureanewSUbmisions2", 7, "634afc17d129402bba111111", 2);
 // 	// console.log(await api.getUserSubmissions("cpduels-bot"));
 // 	// await api.getSubmissionById(177820677, 1729);

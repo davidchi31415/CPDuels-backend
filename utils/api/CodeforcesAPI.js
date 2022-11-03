@@ -108,6 +108,14 @@ class CodeforcesAPI {
 	toComment(programTypeId, text) {
 		if (
 			[
+				43,
+				80,
+				52,
+				50,
+				54,
+				73,
+				59,
+				61, // C++
 				65,
 				79,
 				9, // C#
@@ -179,18 +187,18 @@ class CodeforcesAPI {
 		for (let i = 0; i < submissions.length; i++) {
 			if (submissionCounter === 0) break; // If there are no PENDING submissions, don't check
 			let submission = submissions[i];
-			let duelId, playerNum;
+			let duelId, uid;
 			let info = await this.getSubmissionUserInfo(submission);
 			let verdict = submission.verdict ? submission.verdict : "PENDING";
 			if (info) {
 				console.log(info);
-				({ duelId, playerNum } = info);
+				({ duelId, uid } = info);
 				let findSubmission = await db
 					.collection("submissions")
 					.find(
 						{
 							duelId: duelId,
-							playerNum: playerNum,
+							uid: uid,
 						},
 						{}
 					)
@@ -212,7 +220,7 @@ class CodeforcesAPI {
 					);
 					submissionCounter--; // Mark off the submission (from pending submissions we were looking for)
 					console.log(
-						`Updated player ${playerNum}'s submission with id ${submission.id} in duel ${duelId} to ${submission.verdict}`
+						`Updated player ${uid}'s submission with id ${submission.id} in duel ${duelId} to ${submission.verdict}`
 					);
 				} else {
 					console.log(
@@ -259,7 +267,7 @@ class CodeforcesAPI {
 		let totalResult = comment.match(re)[0];
 		return {
 			duelId: totalResult.slice(0, 24),
-			playerNum: parseInt(totalResult.slice(24, 25)),
+			uid: parseInt(totalResult.slice(24, 58)),
 		};
 	}
 
@@ -269,13 +277,14 @@ class CodeforcesAPI {
 		sourceCode,
 		programTypeId,
 		duelId,
-		playerNum
+		uid
 	) {
 		try {
 			sourceCode = `${this.toComment(
 				programTypeId,
-				`${duelId}${playerNum}`
+				`${duelId}${uid}`
 			)}\n${sourceCode}`;
+			console.log(sourceCode);
 			let resp = await this.client.get(
 				`https://codeforces.com/contest/${contestId}/submit`
 			);
@@ -303,7 +312,7 @@ class CodeforcesAPI {
 				await db.collection("submissions").insertOne({
 					platform: "CF",
 					duelId: duelId,
-					playerNum: playerNum,
+					uid: uid,
 					status: "PENDING",
 				});
 
@@ -443,9 +452,6 @@ class CodeforcesAPI {
 	}
 
 	async getProblemsByUsernamesAndRating(usernames, ratingMin, ratingMax) {
-		console.log(
-			`rating min : ${ratingMin} and the rating max is ${ratingMax}`
-		);
 		let ratedProblems = await this.getProblems({
 			rating: { $gte: ratingMin, $lte: ratingMax },
 		});

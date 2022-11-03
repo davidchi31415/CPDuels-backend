@@ -190,7 +190,7 @@ const submissionSchema = mongoose.Schema({
 		type: String,
 		required: true,
 	},
-	playerNum: {
+	uid: {
 		type: Number,
 		required: true,
 	},

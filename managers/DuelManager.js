@@ -11,15 +11,11 @@ class DuelManager {
 		try {
 			let duels = await db
 				.collection("duels")
-				.find(
-					{
-						_id: ObjectId(id),
-					},
-					{}
-				)
+				.find({ _id: ObjectId(id) })
 				.toArray();
 			if (duels.length != 0) return duels[0];
 		} catch (err) {
+			console.log(err);
 			console.log(
 				"Error: invalid getDuel() request... Probably an invalid id."
 			);
@@ -361,11 +357,11 @@ class DuelManager {
 		}
 	}
 
-	async submitProblem(id, uid, submission) {
+	async submitProblem(duel, uid, submission) {
 		console.log("trying to submit problem");
 		try {
-			let duel = await this.getDuel(id);
-			await this.taskManager.submitProblem(duel, uid, submission);
+			// await this.taskManager.submitProblem(duel, uid, submission);
+			await this.taskManager.taskSubmit(duel, uid, submission);
 			return [true];
 		} catch (e) {
 			console.log(

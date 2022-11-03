@@ -1,6 +1,4 @@
-import duelModel from "../models/models.js";
 import Queue from "../utils/helpers/queue.js";
-import DuelManager from "./DuelManager.js";
 
 class TaskManager {
 	constructor(codeforcesAPI) {
@@ -9,11 +7,11 @@ class TaskManager {
 	}
 	async init() {
 		const checker = async function () {
-			// console.log(this.queue);
+			console.log(this.queue);
 			if (this.queue.size()) {
 				let obj = this.queue.dequeue();
 				if (obj[0] == "submit") {
-					await submitProblem(
+					await this.submitProblem(
 						obj[1].duel,
 						obj[1].uid,
 						obj[1].submission
@@ -71,23 +69,10 @@ class TaskManager {
 		// 	number: problemNum,
 		// 	content: fileContent.current,
 		//   },
-		console.log(duel);
+		console.log(submission);
 		let problem = duel.problems[submission.number - 1];
 		if (duel.platform === "CF") {
 			await this.codeforcesAPI.login();
-			await this.codeforcesAPI.submitProblem(
-				problem.contestId,
-				problem.index,
-				submission.content
-			);
-			// async submitProblem(
-			// 	contestId,
-			// 	problemIndex,
-			// 	sourceCode,
-			// 	programTypeId,
-			// 	duelId,
-			// 	playerNum
-			// )
 			this.codeforcesAPI.submitProblem(
 				problem.contestId,
 				problem.index,
