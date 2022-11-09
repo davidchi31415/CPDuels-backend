@@ -45,7 +45,7 @@ const io = new Server(
 	})
 );
 
-const socketManager = new SocketManager(io);
+new SocketManager(io);
 
 // let api = new CodeforcesAPI();
 
@@ -61,17 +61,14 @@ const socketManager = new SocketManager(io);
 // 		duelId: "634afc17d129402bba111111",
 // 		playerNum: 2,
 // 	},
-// ];
-// q.enqueue(a);
-// console.log(q);
-// const codeforcesAPI = new CodeforcesAPI();
-// const taskManager = new TaskManager(codeforcesAPI);
-// taskManager.init();
-// const duelManager = new DuelManager(codeforcesAPI, taskManager);
+// // ];
+
+// let ss = `// 63643f5fe9146d4ef617690d4fc67b3-af0b-e74-68c8-401f37c58bf
+// saoidufnpasfdasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf`;
 
 // setInterval(async function () {
-// 	let duel = await duelManager.getDuel("6364245cc794c96fbd0dd096");
-// 	console.log(duel);
+// 	// let duel = await duelManager.getDuel("6364245cc794c96fbd0dd096");
+// 	// console.log(duel);
 // 	// console.log(taskManager.wProx);
 // 	// while (taskManager.wProx.length == 0) {
 // 	// 	await sleep(1000);
@@ -86,7 +83,8 @@ const socketManager = new SocketManager(io);
 // 	// console.log(await api.getUserSubmissions("cpduels-bot"));
 // 	// await api.getSubmissionById(177820677, 1729);
 // 	// console.log(await api.getUserSubmissions("cpduels-bot"));
-// 	// console.log(await api.updateSubmissions());
+// 	// console.log(api.getSubmissionInfoFromSource(ss));
+// 	await api.login();
 // 	// await db.collection("submissions").insertOne(ss);
 // }, 10000);
 

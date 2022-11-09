@@ -8,6 +8,7 @@ class TaskManager {
 	async init() {
 		const checker = async function () {
 			console.log(this.queue);
+			await this.codeforcesAPI.updateSubmissions();
 			if (this.queue.size()) {
 				let obj = this.queue.dequeue();
 				if (obj[0] == "submit") {

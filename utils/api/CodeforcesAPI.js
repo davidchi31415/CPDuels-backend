@@ -4,10 +4,17 @@ import cheerio from "cheerio";
 import db from "../../server.js";
 import superagent from "superagent";
 import { findCsrf } from "../helpers/findCsrf.js";
+import circularArray from "../helpers/circularArray.js";
+import { ObjectId } from "mongodb";
 
 class CodeforcesAPI {
 	constructor() {
 		this.client = superagent.agent();
+		this.loginInfo = new circularArray([
+			["cpduels-bot", "davidandjeffrey"],
+			["cpduels-bot", "davidandjeffrey"],
+			["cpduels-bot", "davidandjeffrey"],
+		]);
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////
@@ -83,6 +90,7 @@ class CodeforcesAPI {
 		try {
 			let resp = await this.client.get("https://codeforces.com/enter/");
 			console.log(resp.status);
+			let login = this.loginInfo.getCurAndUpdate();
 			let csrf = findCsrf(resp.text);
 			let res = await this.client
 				.post("https://codeforces.com/enter/")
@@ -90,8 +98,8 @@ class CodeforcesAPI {
 					_tta: "176",
 					csrf_token: csrf,
 					action: "enter",
-					handleOrEmail: "cpduels-bot",
-					password: "davidandjeffrey",
+					handleOrEmail: login[0],
+					password: login[1],
 				})
 				.set("Content-Type", "application/x-www-form-urlencoded");
 			console.log(res.status);
@@ -182,6 +190,10 @@ class CodeforcesAPI {
 
 	async updateSubmissions() {
 		let dbSubmissions = await this.getPendingSubmissionsFromDatabase();
+		if (!dbSubmissions.length) {
+			console.log("there are no sumissions to update :)");
+			return;
+		}
 		let submissions = await this.getUserSubmissions("cpduels-bot");
 		let submissionCounter = dbSubmissions.length;
 		for (let i = 0; i < submissions.length; i++) {
@@ -189,27 +201,30 @@ class CodeforcesAPI {
 			let submission = submissions[i];
 			let duelId, uid;
 			let info = await this.getSubmissionUserInfo(submission);
+			console.log(info);
 			let verdict = submission.verdict ? submission.verdict : "PENDING";
 			if (info) {
-				console.log(info);
+				console.log("Found info");
 				({ duelId, uid } = info);
 				let findSubmission = await db
 					.collection("submissions")
 					.find(
 						{
-							duelId: duelId,
+							duelId: ObjectId(duelId),
 							uid: uid,
 						},
 						{}
 					)
 					.toArray();
-				// console.log(findSubmission);
+				console.log(findSubmission);
 				if (findSubmission.length != 0) {
+					console.log("Found summission in database");
 					// update submission
 					if (findSubmission[0].status !== "PENDING") continue; // Only update if it is a pending submission
 					await db.collection("submissions").findOneAndUpdate(
 						{
-							duelId: duelId,
+							duelId: ObjectId(duelId),
+							uid: uid,
 						},
 						{
 							$set: {
@@ -241,7 +256,7 @@ class CodeforcesAPI {
 			submission.id
 		);
 		try {
-			return this.getSubmissionInfoFromSource(source);
+			return await this.getSubmissionInfoFromSource(source);
 		} catch {
 			return 0;
 		}
@@ -261,13 +276,14 @@ class CodeforcesAPI {
 	}
 
 	getSubmissionInfoFromSource(text) {
-		let re = /[a-z0-9]{25}/gs;
 		let comment = text.split(/\r?\n|\r|\n/g)[0];
-		// console.log(comment);
-		let totalResult = comment.match(re)[0];
+		let totalResult = comment.match(/[a-z0-9-]*/gs).filter((e) => {
+			return e !== "";
+		})[0];
+		console.log(totalResult);
 		return {
 			duelId: totalResult.slice(0, 24),
-			uid: parseInt(totalResult.slice(24, 58)),
+			uid: totalResult.slice(24),
 		};
 	}
 
