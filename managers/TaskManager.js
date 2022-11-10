@@ -8,7 +8,6 @@ class TaskManager {
 	async init() {
 		const checker = async function () {
 			console.log(this.queue);
-			await this.codeforcesAPI.updateSubmissions();
 			if (this.queue.size()) {
 				let obj = this.queue.dequeue();
 				if (obj[0] == "submit") {
@@ -20,7 +19,11 @@ class TaskManager {
 				}
 			}
 		};
+		const uS = async function () {
+			await this.codeforcesAPI.updateSubmissions();
+		};
 		setInterval(checker.bind(this), 1000);
+		setInterval(uS.bind(this), 10000);
 	}
 
 	async updateProblemsets() {

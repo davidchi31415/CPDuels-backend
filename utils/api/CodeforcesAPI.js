@@ -201,10 +201,11 @@ class CodeforcesAPI {
 			let submission = submissions[i];
 			let duelId, uid;
 			let info = await this.getSubmissionUserInfo(submission);
+			console.log("Found info");
 			console.log(info);
 			let verdict = submission.verdict ? submission.verdict : "PENDING";
+			if (verdict === "TESTING") continue;
 			if (info) {
-				console.log("Found info");
 				({ duelId, uid } = info);
 				let findSubmission = await db
 					.collection("submissions")
