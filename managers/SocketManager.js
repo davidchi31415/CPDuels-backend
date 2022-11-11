@@ -13,16 +13,16 @@ class SocketManager {
 			socket.on("join", (roomId) => {
 				socket.join(roomId);
 			});
-			socket.on("join-duel", async ({ roomId, handle, uid }) => {
+			socket.on("join-duel", async ({ roomId, username, uid }) => {
 				let duelState = await duelManager.getDuelState(roomId);
 				if (duelState === "WAITING") {
-					console.log(handle + " Wants to Join Duel " + roomId);
+					console.log(username + " Wants to Join Duel " + roomId);
 					let validJoin = await duelManager.isValidJoinRequest(
 						roomId,
-						handle
+						username
 					);
 					if (validJoin[0]) {
-						await duelManager.addDuelPlayer(roomId, handle, uid);
+						await duelManager.addDuelPlayer(roomId, username, uid);
 						await duelManager.changeDuelState(roomId, "READY");
 						io.emit("status-change", {
 							roomId: roomId,

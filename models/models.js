@@ -89,7 +89,7 @@ const problemSchema = mongoose.Schema({
 });
 
 const playerSchema = mongoose.Schema({
-	handle: {
+	username: {
 		type: String,
 		required: true,
 		default: "Guest",
@@ -171,7 +171,7 @@ const duelSchema = mongoose.Schema({
 				default: "NONE", // DRAW, WON
 			},
 			{
-				type: String, // Player handle of the winner
+				type: String, // Player username of the winner
 				required: false,
 			},
 		],
