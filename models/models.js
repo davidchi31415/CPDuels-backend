@@ -191,7 +191,7 @@ const submissionSchema = mongoose.Schema({
 		required: true,
 	},
 	uid: {
-		type: Number,
+		type: String,
 		required: true,
 	},
 	submissionsId: {
