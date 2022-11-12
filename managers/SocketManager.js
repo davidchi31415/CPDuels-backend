@@ -6,8 +6,8 @@ class SocketManager {
 	constructor(io) {
 		const codeforcesAPI = new CodeforcesAPI();
 		const taskManager = new TaskManager(codeforcesAPI);
-		taskManager.init();
 		const duelManager = new DuelManager(codeforcesAPI, taskManager);
+		taskManager.init();
 		this.io = io;
 		io.on("connection", async (socket) => {
 			socket.on("join", (roomId) => {

@@ -19,11 +19,11 @@ class TaskManager {
 				}
 			}
 		};
-		const uS = async function () {
-			await this.codeforcesAPI.updateSubmissions();
-		};
+
 		setInterval(checker.bind(this), 1000);
-		setInterval(uS.bind(this), 10000);
+		// while (true) {
+		// 	await this.codeforcesAPI.updateSubmissions();
+		// }
 	}
 
 	async updateProblemsets() {
