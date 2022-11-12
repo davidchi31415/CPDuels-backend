@@ -186,6 +186,18 @@ const submissionSchema = mongoose.Schema({
 		type: String,
 		required: true,
 	},
+	// problemName: {
+	// 	type: String,
+	// 	required: true
+	// },
+	timeSubmitted: {
+		type: String,
+		required: true
+	},
+	// timeUsed: {
+	// 	type: Number,
+	// 	required: true
+	// },
 	duelId: {
 		type: String,
 		required: true,

@@ -326,8 +326,10 @@ class CodeforcesAPI {
 			const error = $('span[class="error for__source"]').text();
 			if (error !== "") throw error;
 			else {
+				let timeSubmitted = new Date().toLocaleString() + " CT";
 				await db.collection("submissions").insertOne({
 					platform: "CF",
+					timeSubmitted: timeSubmitted,
 					duelId: duelId,
 					uid: uid,
 					status: "PENDING",
