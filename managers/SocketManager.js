@@ -54,18 +54,15 @@ class SocketManager {
 						timeLeft: timeLimit * 60,
 					});
 
-					let timeInterval;
-					let checkInterval;
-
-					checkInterval = setInterval(async () => {
+					this.checkInterval = setInterval(async () => {
 						// await duelManager.checkProblemSolves(roomId);
 						let duel = await duelManager.getDuel(roomId);
 						if (
 							duel.playerOneSolves === duel.problems.length ||
 							duel.playerTwoSolves === duel.problems.length
 						) {
-							if (timeInterval) clearInterval(timeInterval);
-							if (checkInterval) clearInterval(checkInterval);
+							if (this.timeInterval) clearInterval(this.timeInterval);
+							if (this.checkInterval) clearInterval(this.checkInterval);
 							await duelManager.finishDuel(roomId);
 							io.emit("status-change", {
 								roomId: roomId,
@@ -73,12 +70,12 @@ class SocketManager {
 							});
 						}
 					}, 3000);
-					timeInterval = setInterval(async () => {
+					this.timeInterval = setInterval(async () => {
 						let timeLeft = await this.getTimeLeft(
 							startTime,
 							maxTime,
-							timeInterval,
-							checkInterval,
+							this.timeInterval,
+							this.checkInterval,
 							roomId,
 							io,
 							duelManager
@@ -123,6 +120,72 @@ class SocketManager {
 				} catch (e) {
 					console.log(
 						`Error submitting problem in Duel ${roomId}: ${e}`
+					);
+				}
+			});
+			socket.on("abort-duel", async ({ roomId, uid }) => {
+				console.log(
+					`Duel ${roomId}, player with uid ${uid} is aborting duel.`
+				);
+
+				try {
+					let duel = await duelManager.getDuel(roomId);
+					let valid = false;
+					for (let i = 0; i < duel.players.length; i++) {
+						if (duel.players[i].uid === uid) valid = true;
+					}
+					if (valid) {
+						await duelManager.abortDuel(roomId);
+						if (this.checkInterval) clearInterval(this.checkInterval);
+						if (this.timeInterval) clearInterval(this.timeInterval);
+						io.emit('status-change', { roomId: roomId, newStatus: "ABORTED" });
+					} else {
+						console.log(
+							`Not a valid uid for aborting Duel ${roomId}`
+						);
+						io.emit("abort-duel-error", {
+							roomId: roomId,
+							uid: uid,
+							message:
+								"You are not recognized as a duel participant",
+						});
+					}
+				} catch (e) {
+					console.log(
+						`Error aborting duel in Duel ${roomId}: ${e}`
+					);
+				}
+			});
+			socket.on("resign-duel", async ({ roomId, uid }) => {
+				console.log(
+					`Duel ${roomId}, player with uid ${uid} is resigning duel.`
+				);
+
+				try {
+					let duel = await duelManager.getDuel(roomId);
+					let valid = false;
+					for (let i = 0; i < duel.players.length; i++) {
+						if (duel.players[i].uid === uid) valid = true;
+					}
+					if (valid) {
+						await duelManager.resignDuel(roomId, uid);
+						if (this.checkInterval) clearInterval(this.checkInterval);
+						if (this.timeInterval) clearInterval(this.timeInterval);
+						io.emit('status-change', { roomId: roomId, newStatus: "FINISHED" });
+					} else {
+						console.log(
+							`Not a valid uid for resigning Duel ${roomId}`
+						);
+						io.emit("resign-duel-error", {
+							roomId: roomId,
+							uid: uid,
+							message:
+								"You are not recognized as a duel participant",
+						});
+					}
+				} catch (e) {
+					console.log(
+						`Error resigning duel in Duel ${roomId}: ${e}`
 					);
 				}
 			});
