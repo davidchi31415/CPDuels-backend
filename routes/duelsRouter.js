@@ -1,6 +1,7 @@
 import express from "express";
 import duelModel from "../models/models.js";
 import DuelManager from "../managers/DuelManager.js";
+import CodeforcesAPI from "../utils/api/CodeforcesAPI.js";
 
 const duelsRouter = express.Router();
 

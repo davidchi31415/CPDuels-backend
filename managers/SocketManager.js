@@ -29,7 +29,7 @@ class SocketManager {
 							newStatus: "READY",
 						});
 					} else {
-						io.to(socket.id).emit("error-message", validJoin[1]);
+						io.to(socket.id).emit("join-duel-error", { message: validJoin[1] });
 					}
 				}
 			});

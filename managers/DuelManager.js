@@ -36,13 +36,13 @@ class DuelManager {
       return [false, "Invalid Problem Count"];
     }
     let validTimeLimit = timeLimit && timeLimit >= 5 && timeLimit <= 180;
-    // if (!validTimeLimit) {
-    // 	return [false, "Invalid Time Limit"];
-    // }
+    if (!validTimeLimit) {
+      return [false, "Invalid Time Limit"];
+    }
     let validParams;
     if (platform === "CF") {
       validParams = [true, "asdf"];
-      // validParams = await codeforcesAPI.checkDuelParams(
+      // validParams = await CodeforcesAPI.checkDuelParams(
       // 	players[0].username,
       // 	ratingMin,
       // 	ratingMax
@@ -65,21 +65,23 @@ class DuelManager {
       // username multiple players joining at once
       return [false, "Duel Full"];
     }
+    if (username === "!GUEST!") return [true]; // Skip the username checking if it is a guest join request
     let owner = duel.players[0];
     if (owner.username === username) {
       return [false, "Duplicate Usernames"];
     }
-    // let validUsername;
-    // if (duel.platform === "CF") {
-    // 	validUsername = await codeforcesAPI.checkUsername(username);
-    // } else if (duel.platform === "AT") {
+    let validUsername;
+    if (duel.platform === "CF") {
+      validUsername = await this.codeforcesAPI.checkUsername(username);
+    }
+    // else if (duel.platform === "AT") {
     // 	// validUsername = await AtcoderAPI.checkUsername(username);
     // } else {
     // 	// validUsername = await LeetcodeAPI.checkUsername(username);
     // }
-    // if (!validUsername[0]) {
-    // 	return [false, validUsername[1]];
-    // }
+    if (!validUsername[0]) {
+      return [false, validUsername[1]];
+    }
     return [true];
   }
 

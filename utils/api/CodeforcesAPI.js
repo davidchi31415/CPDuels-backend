@@ -339,7 +339,7 @@ class CodeforcesAPI {
   }
 
   async checkUsername(username) {
-    const url = `https://codeforces.com/api/user.info?handle=${username}`;
+    const url = `https://codeforces.com/api/user.info?handles=${username}`;
     const response = await this.getAPIResponse(url);
     if (!response) {
       return [false, "Codeforces API Error"];
@@ -352,7 +352,9 @@ class CodeforcesAPI {
 
   async checkDuelParams(username, ratingMin, ratingMax) {
     // For validating duel creation request
-    let validUsername = await this.checkUsername(username);
+    let validUsername;
+    if (username === '!GUEST!') validUsername = true; 
+    else validUsername = await this.checkUsername(username);
     if (!validUsername) {
       return [false, "Inavlid CF Username"];
     }
