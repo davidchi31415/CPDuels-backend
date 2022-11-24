@@ -11,6 +11,7 @@ import CodeforcesAPI from "./utils/api/CodeforcesAPI.js";
 import DuelManager from "./managers/DuelManager.js";
 import TaskManager from "./managers/TaskManager.js";
 import submissionsRouter from "./routes/submissionsRouter.js";
+import messagesRouter from "./routes/messagesRouter.js";
 
 const app = express();
 var corsOptions = {
@@ -37,6 +38,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/duels", duelsRouter);
 app.use("/cfproblems", cfproblemsRouter);
 app.use("/submissions", submissionsRouter);
+app.use("/messages", messagesRouter);
 const server = app.listen(PORT, () =>
 	console.log(`Server is started on port ${PORT}.`)
 );

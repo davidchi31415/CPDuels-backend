@@ -216,6 +216,31 @@ const submissionSchema = mongoose.Schema({
 	},
 });
 
+const messageSchema = mongoose.Schema({
+	timeSubmitted: {
+		type: String,
+	},
+	name: {
+		type: String,
+	},
+	email: {
+		type: String,
+	},
+	type: {
+		type: String,
+		required: true
+	},
+	wantsResponse: {
+		type: String,
+		required: true,
+		default: "NO",
+	},
+	content: {
+		type: String,
+		required: true,
+	},
+});
+
 export const cfproblemModel = mongoose.models.CFProblem
 	? mongoose.model.CFProblem
 	: mongoose.model("CFProblem", cfproblemSchema);
@@ -228,5 +253,8 @@ const duelModel = mongoose.models.duelModel
 export const submissionModel = mongoose.models.submissionModel
 	? mongoose.models.submissionModel
 	: mongoose.model("Submission", submissionSchema);
+export const messageModel = mongoose.models.messageModel
+	? mongoose.models.messageModel
+	: mongoose.model("Message", messageSchema);
 
 export default duelModel;
