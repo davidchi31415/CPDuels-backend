@@ -52,7 +52,9 @@ const io = new Server(
 new SocketManager(io);
 
 // let api = new CodeforcesAPI();
-
+// await api.puppeteerLogin();
+// console.log("asdf00");
+// await api.puppeteerLogin();
 // let q = new Queue();
 
 // let a = [

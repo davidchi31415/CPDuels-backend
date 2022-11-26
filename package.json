@@ -15,6 +15,11 @@
     "http": "^0.0.1-security",
     "mongoose": "^6.6.7",
     "node-fetch": "^3.2.10",
+    "puppeteer": "^19.3.0",
+    "puppeteer-core": "^19.3.0",
+    "puppeteer-extra": "^3.3.4",
+    "puppeteer-extra-plugin-portal": "^3.1.0",
+    "puppeteer-extra-plugin-stealth": "^2.11.1",
     "socket.io": "^4.5.3",
     "superagent": "^8.0.2",
     "superagent-proxy": "^3.0.0"
