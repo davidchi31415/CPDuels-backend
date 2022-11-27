@@ -51,46 +51,11 @@ const io = new Server(
 
 new SocketManager(io);
 
-let api = new CodeforcesAPI();
-for (let i = 0; i < 25; i++) {
-	console.log(`Submission Number ${i+1}`);
-	await api.puppeteerSubmitProblem(1729, "f", `code${i}`, 7, "634afc17d129402bba111111", "1");
-}
-
-// let a = [
-// 	"submit",
-// 	{
-// 		contestId: 1729,
-// 		problemIndex: "f",
-// 		sourceCode: "thisis a new sub",
-// 		programTypeId: 7,
-// 		duelId: "634afc17d129402bba111111",
-// 		playerNum: 2,
-// 	},
-// // ];
-// let ss = `// 63643f5fe9146d4ef617690d4fc67b3-af0b-e74-68c8-401f37c58bf
-// saoidufnpasfdasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf`;
-
-// setInterval(async function () {
-// 	// let duel = await duelManager.getDuel("6364245cc794c96fbd0dd096");
-// 	// console.log(duel);
-// 	// console.log(taskManager.wProx);
-// 	// while (taskManager.wProx.length == 0) {
-// 	// 	await sleep(1000);
-// 	// }
-// 	// await api.updateSubmissions();
-// 	// await api.updateSubmissionStatus("6359d9fbdca5b34c3617bf7a", "ACCEPT");
-// 	// let check = await taskManager.get("https://codeforces.com/enter/");
-// 	// console.log(check.text.match("unavailable.")[0]);
-// 	// await api.login();
-// 	// await api.submitProblem(1729, "f", "this is anewsubmision2", 7, "634afc17d129402bba100000", 2);
-// 	// await api.submitProblem(1729, "f", "thisforsureanewSUbmisions2", 7, "634afc17d129402bba111111", 2);
-// 	// console.log(await api.getUserSubmissions("cpduels-bot"));
-// 	// await api.getSubmissionById(177820677, 1729);
-// 	// console.log(await api.getUserSubmissions("cpduels-bot"));
-// 	// console.log(api.getSubmissionInfoFromSource(ss));
-// 	await api.login();
-// 	// await db.collection("submissions").insertOne(ss);
-// }, 10000);
+// const api = new CodeforcesAPI();
+// for (let i = 0; i < 25; i++) {
+// 	await api.puppeteerSubmitProblem(
+//     1729, "f", `hel${i}`, 73, "123", "321"
+// 	);
+// }
 
 export default db;

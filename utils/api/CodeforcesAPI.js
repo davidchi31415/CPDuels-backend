@@ -29,7 +29,7 @@ class CodeforcesAPI {
     this.client = superagent.agent();
     this.loginInfo = new circularArray([
       // ["cpduels-bot", "davidandjeffrey"],
-      // ["cpduels-bot2", "davidandjeffrey"],
+      ["cpduels-bot2", "davidandjeffrey"],
       ["cpduels-bot3", "davidandjeffrey"],
       ["cpduels-bot4", "davidandjeffrey"],
       ["cpduels-bot5", "davidandjeffrey"],
@@ -150,6 +150,11 @@ class CodeforcesAPI {
     this.currentBrowser = false;
     this.currentSubmissionCount = 0;
     this.loggedIn = false;
+  }
+
+  async switchAccounts() {
+    await this.logout();
+    await this.puppeteerLogin();
   }
 
   async getCsrf(url) {
@@ -412,7 +417,15 @@ class CodeforcesAPI {
       )}\n${sourceCode}`;
       console.log(sourceCode);
       await this.ensureLoggedIn();
-      if (!this.currentBrowser) return false;
+      if (!this.currentBrowser) {
+        console.log(
+          `Submitting solution for ${contestId}${problemIndex} Failed: \n Could not open Puppeteer`
+        );
+        return [
+          false,
+          `Submitting solution for ${contestId}${problemIndex} Failed: \n Could not open Puppeteer`,
+        ];
+      }
       const page = await this.currentBrowser.newPage();
       await page.goto(`https://codeforces.com/contest/${contestId}/submit`, {
         waitUntil: "networkidle2",
@@ -429,13 +442,18 @@ class CodeforcesAPI {
       await page.waitForSelector('input[value="Submit"]');
       await page.click('input[value="Submit"]');
       this.currentSubmissionCount++;
-      await page.waitForNavigation({ waitUntil: "networkidle2" }); // FIX, sometimes this times out
+      await page.waitForNavigation({ waitUntil: "domcontentloaded" }); // With networkidle2 timeouts sometimes
       console.log("Submitted successfully.");
-      if (this.checkIfLogoutNecessary()) await this.logout();
+      if (this.checkIfLogoutNecessary()) await this.switchAccounts();
+      return [true];
     } catch (err) {
       console.log(
         `Submitting solution for ${contestId}${problemIndex} Failed: \n ${err}`
       );
+      return [
+        false,
+        `Submitting solution for ${contestId}${problemIndex} Failed: \n ${err}`,
+      ];
     }
   }
 

@@ -126,12 +126,10 @@ const duelSchema = mongoose.Schema({
 	problemCount: {
 		type: Number,
 		required: true,
-		default: 5,
 	},
 	timeLimit: {
 		type: Number,
 		required: true,
-		default: 30,
 	},
 	private: {
 		type: Boolean,
@@ -168,10 +166,10 @@ const duelSchema = mongoose.Schema({
 			{
 				type: String,
 				required: true,
-				default: "NONE", // DRAW, WON
+				default: "NONE", // DRAW, WON, ABORTED, RESIGNED
 			},
 			{
-				type: String, // Player username of the winner
+				type: String, // Player username of the winner (if duel ended by resignation, still winner)
 				required: false,
 			},
 		],
