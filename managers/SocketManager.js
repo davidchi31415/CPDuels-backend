@@ -9,7 +9,12 @@ class SocketManager {
     const duelManager = new DuelManager(codeforcesAPI, taskManager);
     // taskManager.init();
     setInterval(async () => {
-      await codeforcesAPI.updateSubmissions();
+      let checkedCF = await codeforcesAPI.updateSubmissions(); // set
+      if (checkedCF) {
+        for (const item of checkedCF) {
+          io.emit("submission-change", { uid: item });
+        }
+      }
     }, 10000);
     this.io = io;
     io.on("connection", async (socket) => {

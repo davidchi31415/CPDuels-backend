@@ -203,7 +203,7 @@ class CodeforcesAPI {
     try {
       sourceCode = `${this.toComment(
         programTypeId,
-        `${duelId}${uid}`
+        `${Date.now()}`
       )}\n${sourceCode}`;
       await this.ensureLoggedIn();
       if (!this.currentSubmitBrowser) {
@@ -494,11 +494,16 @@ class CodeforcesAPI {
     let dbSubmissions = await this.getPendingSubmissionsFromDatabase();
     if (!dbSubmissions.length) {
       console.log("There are no CF sumissions to update.");
-      return;
+      return false;
     }
     for (let i = 0; i < dbSubmissions.length; i++) {
       await this.updateSubmission(dbSubmissions[i]);
     }
+    let checkedUids = new Set();
+    for (let i = 0; i < dbSubmissions.length; i++) {
+      checkedUids.add(dbSubmissions[i].uid);
+    }
+    return checkedUids;
   }
 
   ///////////////////////////////////////////////////////////////////////////////
