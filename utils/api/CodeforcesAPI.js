@@ -349,13 +349,15 @@ class CodeforcesAPI {
   async updateSubmissionVerdict(rawVerdict, submissionId) {
     const verdict = rawVerdict.toUpperCase();
     if (verdict.includes("WRONG ANSWER")) {
+      let re = /<span class="verdict-format-judged">([\s\S]*?)<\/span>/;
+      let testCaseNumber = rawVerdict.match(re)[1];
       await submissionModel.findOneAndUpdate(
         {
           submissionId: submissionId,
         },
         {
           $set: {
-            status: "WRONG ANSWER",
+            status: ["WRONG ANSWER", testCaseNumber],
           },
         }
       );
@@ -366,51 +368,59 @@ class CodeforcesAPI {
         },
         {
           $set: {
-            status: "COMPILATION ERROR",
+            status: ["COMPILATION ERROR"],
           },
         }
       );
     } else if (verdict.includes("RUNTIME ERROR")) {
+      let re = /<span class="verdict-format-judged">([\s\S]*?)<\/span>/;
+      let testCaseNumber = rawVerdict.match(re)[1];
       await submissionModel.findOneAndUpdate(
         {
           submissionId: submissionId,
         },
         {
           $set: {
-            status: "RUNTIME ERROR",
+            status: ["RUNTIME ERROR", testCaseNumber],
           },
         }
       );
     } else if (verdict.includes("TIME LIMIT EXCEEDED")) {
+      let re = /<span class="verdict-format-judged">([\s\S]*?)<\/span>/;
+      let testCaseNumber = rawVerdict.match(re)[1];
       await submissionModel.findOneAndUpdate(
         {
           submissionId: submissionId,
         },
         {
           $set: {
-            status: "TIME LIMIT EXCEEDED",
+            status: ["TIME LIMIT EXCEEDED", testCaseNumber],
           },
         }
       );
     } else if (verdict.includes("MEMORY LIMIT EXCEEDED")) {
+      let re = /<span class="verdict-format-judged">([\s\S]*?)<\/span>/;
+      let testCaseNumber = rawVerdict.match(re)[1];
       await submissionModel.findOneAndUpdate(
         {
           submissionId: submissionId,
         },
         {
           $set: {
-            status: "MEMORY LIMIT EXCEEDED",
+            status: ["MEMORY LIMIT EXCEEDED", testCaseNumber],
           },
         }
       );
     } else if (verdict.includes("IDLENESS LIMIT EXCEEDED")) {
+      let re = /<span class="verdict-format-judged">([\s\S]*?)<\/span>/;
+      let testCaseNumber = rawVerdict.match(re)[1];
       await submissionModel.findOneAndUpdate(
         {
           submissionId: submissionId,
         },
         {
           $set: {
-            status: "IDLENESS LIMIT EXCEEDED",
+            status: ["IDLENESS LIMIT EXCEEDED", testCaseNumber],
           },
         }
       );
@@ -421,7 +431,7 @@ class CodeforcesAPI {
         },
         {
           $set: {
-            status: "ACCEPTED",
+            status: ["ACCEPTED"],
           },
         }
       );

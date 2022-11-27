@@ -213,9 +213,17 @@ const submissionSchema = mongoose.Schema(
       required: true,
     },
     status: {
-      type: String,
+      type: [
+				{
+					type: String,
+					required: true
+				}, {
+					type: Number,
+					required: false
+				}
+			],
       required: true,
-      default: "PENDING", // WA, AC, RTE
+      default: ["PENDING"], // WA, AC, RTE
     },
   },
   {
