@@ -28,7 +28,7 @@ class CodeforcesAPI {
   constructor() {
     this.client = superagent.agent();
     this.loginInfo = new circularArray([
-      // ["cpduels-bot", "davidandjeffrey"],
+      ["cpduels-bot", "davidandjeffrey"],
       ["cpduels-bot2", "davidandjeffrey"],
       ["cpduels-bot3", "davidandjeffrey"],
       ["cpduels-bot4", "davidandjeffrey"],
@@ -43,40 +43,11 @@ class CodeforcesAPI {
     this.loggedIn = false;
     this.currentSubmissionCount = 0;
     this.lastLoginTime = false;
+    this.currentAccount = ""; // not logged in
   }
 
-  /////////////////////////////////////////////////////////////////////////////////
-  // API
-
-  async getAPIResponse(url, params) {
-    try {
-      let tries = 0;
-      let returnObj;
-      while (tries < 5) {
-        tries++;
-        let responseData = {
-          status: "",
-          comment: "",
-        };
-        await fetch(url, params).then(async (res) => {
-          if (res.status === 503) {
-            // Limit exceeded error
-            responseData.status = "FAILED";
-            responseData.comment = "limit exceeded";
-            await sleep(1000);
-          } else {
-            responseData = await res.json();
-          }
-        });
-        if (responseData?.status === "OK") return responseData;
-        returnObj = responseData;
-      }
-      return returnObj; // Return if fail after 5 tries and not limit exceeded
-    } catch (e) {
-      console.log(e);
-      return false;
-    }
-  }
+  //////////////////////////////////////////////////////////////////////////
+  // Submitting
 
   async post(data) {
     return await this.client
@@ -85,31 +56,6 @@ class CodeforcesAPI {
       .set("Content-Type", "application/x-www-form-urlencoded");
   }
 
-  async updateProblemsInDatabase() {
-    console.log("Updating CF Problemset: fetching CF Problems");
-    let problem_list = await this.getProblemList();
-    console.log("Updating CF Problemset: scraping CF Problems");
-    let scraped_problems = [];
-    for (let i = 0; i < 100; i++) {
-      let interactive = false;
-      for (let j = 0; j < problem_list[i].tags?.length; j++) {
-        if (problem_list[i].tags[j] === "interactive") interactive = true; // TO DO
-      }
-      if (interactive) continue;
-      let content = await this.getProblemContent(
-        problem_list[i].contestId,
-        problem_list[i].index
-      );
-      if (!content) continue; // if problem was not properly scraped
-      scraped_problems.push({ ...problem_list[i], content: content });
-      console.log(
-        `Updating CF Problemset: scraped ${i + 1}/${problem_list.length}`
-      );
-    }
-    db.collection("cfproblems").insertMany(scraped_problems);
-    console.log(scraped_problems);
-    console.log("CF Problemset successfully updated.");
-  }
   async ensureBrowser() {
     if (this.currentBrowser) return;
     this.currentBrowser = await puppeteer.launch({
@@ -148,8 +94,10 @@ class CodeforcesAPI {
   async logout() {
     await this.currentBrowser.close();
     this.currentBrowser = false;
+    this.page = false;
     this.currentSubmissionCount = 0;
     this.loggedIn = false;
+    this.currentAccount = "";
   }
 
   async switchAccounts() {
@@ -174,7 +122,12 @@ class CodeforcesAPI {
     await this.ensureBrowser();
     if (!this.currentBrowser) return false;
     const page = await this.currentBrowser.newPage();
-    await page.goto("https://codeforces.com/enter/", {
+    await page.setRequestInterception(true);
+    page.on("request", (request) => {
+      if (request.resourceType() === "image") request.abort();
+      else request.continue();
+    });
+    page.goto("https://codeforces.com/enter/", {
       waitUntil: "networkidle2",
     });
     let login = this.loginInfo.getCurAndUpdate();
@@ -184,16 +137,20 @@ class CodeforcesAPI {
     await page.type("input[id=password]", login[1]);
     await page.waitForSelector("input[class=submit]");
     await page.click("input[class=submit]");
-    await page.waitForNavigation({ waitUntil: "networkidle2" });
-    let re = /cpduels-bot/gs;
-    let resp = await page.content();
-    if (!(await resp).match(re)) {
-      this.logout();
-      throw "Request failed. Check handleOrEmail or password";
+    try {
+      // Successful login
+      await page.waitForSelector(`a[href="/profile/${login[0]}"]`);
+      console.log("Login Succeeded");
+      this.lastLoginTime = Date.now();
+      this.loggedIn = true;
+      this.currentAccount = login[0];
+    } catch {
+      // Failed to login
+      console.log(
+        `Could not login with account ${login[0]}: trying with next account`
+      );
+      await this.switchAccounts();
     }
-    console.log("Login Succeeded");
-    this.lastLoginTime = Date.now();
-    this.loggedIn = true;
   }
 
   async normalLogin() {
@@ -283,7 +240,188 @@ class CodeforcesAPI {
     }
   }
 
-  //https://codeforces.com/contest/1729/submission/177820677
+  checkIfLogoutNecessary() {
+    if (!this.lastLoginTime || !this.currentBrowser) return false;
+    console.log(this.currentSubmissionCount);
+    if (this.currentSubmissionCount >= 20) return true;
+    return false;
+  }
+
+  async puppeteerSubmitProblem(
+    contestId,
+    problemIndex,
+    sourceCode,
+    programTypeId,
+    duelId,
+    uid
+  ) {
+    try {
+      sourceCode = `${this.toComment(
+        programTypeId,
+        `${duelId}${uid}`
+      )}\n${sourceCode}`;
+      console.log(sourceCode);
+      await this.ensureLoggedIn();
+      if (!this.currentBrowser) {
+        console.log(
+          `Submitting solution for ${contestId}${problemIndex} Failed: \n Could not open Puppeteer`
+        );
+        return [
+          false,
+          `Submitting solution for ${contestId}${problemIndex} Failed: \n Could not open Puppeteer`,
+        ];
+      }
+      if (!this.page) {
+        this.page = await this.currentBrowser.newPage();
+        await this.page.setRequestInterception(true);
+        this.page.on("request", (request) => {
+          if (request.resourceType() === "image") request.abort();
+          else request.continue();
+        });
+      }
+      this.page.goto(`https://codeforces.com/contest/${contestId}/submit`, {
+        waitUntil: "networkidle2",
+      });
+      await this.page.waitForSelector('select[name="submittedProblemIndex"]');
+      await this.page.select(
+        'select[name="submittedProblemIndex"]',
+        problemIndex.toUpperCase()
+      );
+      await this.page.waitForSelector('select[name="programTypeId"]');
+      await this.page.select(
+        'select[name="programTypeId"]',
+        `${programTypeId}`
+      );
+      await this.page.waitForSelector('textarea[class="ace_text-input"]');
+      await this.page.type('textarea[class="ace_text-input"]', sourceCode);
+      await this.page.waitForSelector('input[value="Submit"]');
+      await this.page.click('input[value="Submit"]');
+      this.currentSubmissionCount++;
+      try {
+        // Solution successfully submitted
+        await this.page.waitForSelector("tr.highlighted-row");
+        const submissionId = await this.page.evaluate(() =>
+          document
+            .querySelector("tr.highlighted-row")
+            .getAttribute("data-submission-id")
+        );
+        console.log(submissionId);
+      } catch (e) {
+        // Solution failed to submit
+        console.log(
+          `Submitting solution failed with account ${this.currentAccount}: switching accounts and resubmitting`
+        );
+        await this.switchAccounts();
+        await this.puppeteerSubmitProblem(
+          contestId,
+          problemIndex,
+          sourceCode,
+          programTypeId,
+          duelId,
+          uid
+        );
+      }
+      if (this.checkIfLogoutNecessary()) await this.switchAccounts();
+      console.log("Submitted successfully.");
+      return [true];
+    } catch (err) {
+      console.log(
+        `Submitting solution for ${contestId}${problemIndex} Failed: \n ${err}`
+      );
+      return [
+        false,
+        `Submitting solution for ${contestId}${problemIndex} Failed: \n ${err}`,
+      ];
+    }
+  }
+
+  async submitProblem(
+    contestId,
+    problemIndex,
+    sourceCode,
+    programTypeId,
+    duelId,
+    uid
+  ) {
+    try {
+      sourceCode = `${this.toComment(
+        programTypeId,
+        `${duelId}${uid}`
+      )}\n${sourceCode}`;
+      console.log(sourceCode);
+      let csrf = await this.getCsrf(
+        `https://codeforces.com/contest/${contestId}/submit`
+      );
+      let submitUrl = `https://codeforces.com/contest/${contestId}/submit?csrf_token=${csrf}`;
+      let res = await this.post([
+        submitUrl,
+        {
+          csrf_token: csrf,
+          action: "submitSolutionFormSubmitted",
+          submittedProblemIndex: problemIndex,
+          programTypeId: programTypeId,
+          contestId: contestId,
+          source: sourceCode,
+          tabSize: "4",
+          _tta: "594",
+          sourceCodeConfirmed: "true",
+        },
+      ]);
+
+      const $ = cheerio.load(res.text);
+      const error = $('span[class="error for__source"]').text();
+      if (error !== "") throw error;
+      else {
+        let timeSubmitted = new Date().toLocaleString() + " CT";
+        await db.collection("submissions").insertOne({
+          platform: "CF",
+          timeSubmitted: timeSubmitted,
+          duelId: duelId,
+          uid: uid,
+          status: "PENDING",
+        });
+
+        console.log(`Submitted solution for ${contestId}${problemIndex}`);
+      }
+    } catch (err) {
+      console.log(
+        `Submitting solution for ${contestId}${problemIndex} Failed: \n ${err}`
+      );
+    }
+  }
+
+  /////////////////////////////////////////////////////////////////////////////////
+  // Updating Submissions
+
+  async getAPIResponse(url, params) {
+    try {
+      let tries = 0;
+      let returnObj;
+      while (tries < 5) {
+        tries++;
+        let responseData = {
+          status: "",
+          comment: "",
+        };
+        await fetch(url, params).then(async (res) => {
+          if (res.status === 503) {
+            // Limit exceeded error
+            responseData.status = "FAILED";
+            responseData.comment = "limit exceeded";
+            await sleep(1000);
+          } else {
+            responseData = await res.json();
+          }
+        });
+        if (responseData?.status === "OK") return responseData;
+        returnObj = responseData;
+      }
+      return returnObj; // Return if fail after 5 tries and not limit exceeded
+    } catch (e) {
+      console.log(e);
+      return false;
+    }
+  }
 
   async getPendingSubmissionsFromDatabase() {
     let result = await db
@@ -395,122 +533,8 @@ class CodeforcesAPI {
     };
   }
 
-  checkIfLogoutNecessary() {
-    if (!this.lastLoginTime || !this.currentBrowser) return false;
-    console.log(this.currentSubmissionCount);
-    if (this.currentSubmissionCount >= 20) return true;
-    return false;
-  }
-
-  async puppeteerSubmitProblem(
-    contestId,
-    problemIndex,
-    sourceCode,
-    programTypeId,
-    duelId,
-    uid
-  ) {
-    try {
-      sourceCode = `${this.toComment(
-        programTypeId,
-        `${duelId}${uid}`
-      )}\n${sourceCode}`;
-      console.log(sourceCode);
-      await this.ensureLoggedIn();
-      if (!this.currentBrowser) {
-        console.log(
-          `Submitting solution for ${contestId}${problemIndex} Failed: \n Could not open Puppeteer`
-        );
-        return [
-          false,
-          `Submitting solution for ${contestId}${problemIndex} Failed: \n Could not open Puppeteer`,
-        ];
-      }
-      const page = await this.currentBrowser.newPage();
-      await page.goto(`https://codeforces.com/contest/${contestId}/submit`, {
-        waitUntil: "networkidle2",
-      });
-      await page.waitForSelector('select[name="submittedProblemIndex"]');
-      await page.select(
-        'select[name="submittedProblemIndex"]',
-        problemIndex.toUpperCase()
-      );
-      await page.waitForSelector('select[name="programTypeId"]');
-      await page.select('select[name="programTypeId"]', `${programTypeId}`);
-      await page.waitForSelector('textarea[class="ace_text-input"]');
-      await page.type('textarea[class="ace_text-input"]', sourceCode);
-      await page.waitForSelector('input[value="Submit"]');
-      await page.click('input[value="Submit"]');
-      this.currentSubmissionCount++;
-      await page.waitForNavigation({ waitUntil: "domcontentloaded" }); // With networkidle2 timeouts sometimes
-      console.log("Submitted successfully.");
-      if (this.checkIfLogoutNecessary()) await this.switchAccounts();
-      return [true];
-    } catch (err) {
-      console.log(
-        `Submitting solution for ${contestId}${problemIndex} Failed: \n ${err}`
-      );
-      return [
-        false,
-        `Submitting solution for ${contestId}${problemIndex} Failed: \n ${err}`,
-      ];
-    }
-  }
-
-  async submitProblem(
-    contestId,
-    problemIndex,
-    sourceCode,
-    programTypeId,
-    duelId,
-    uid
-  ) {
-    try {
-      sourceCode = `${this.toComment(
-        programTypeId,
-        `${duelId}${uid}`
-      )}\n${sourceCode}`;
-      console.log(sourceCode);
-      let csrf = await this.getCsrf(
-        `https://codeforces.com/contest/${contestId}/submit`
-      );
-      let submitUrl = `https://codeforces.com/contest/${contestId}/submit?csrf_token=${csrf}`;
-      let res = await this.post([
-        submitUrl,
-        {
-          csrf_token: csrf,
-          action: "submitSolutionFormSubmitted",
-          submittedProblemIndex: problemIndex,
-          programTypeId: programTypeId,
-          contestId: contestId,
-          source: sourceCode,
-          tabSize: "4",
-          _tta: "594",
-          sourceCodeConfirmed: "true",
-        },
-      ]);
-
-      const $ = cheerio.load(res.text);
-      const error = $('span[class="error for__source"]').text();
-      if (error !== "") throw error;
-      else {
-        let timeSubmitted = new Date().toLocaleString() + " CT";
-        await db.collection("submissions").insertOne({
-          platform: "CF",
-          timeSubmitted: timeSubmitted,
-          duelId: duelId,
-          uid: uid,
-          status: "PENDING",
-        });
-
-        console.log(`Submitted solution for ${contestId}${problemIndex}`);
-      }
-    } catch (err) {
-      console.log(
-        `Submitting solution for ${contestId}${problemIndex} Failed: \n ${err}`
-      );
-    }
-  }
+  ///////////////////////////////////////////////////////////////////////////////
+  // Duels
 
   async checkUsername(username) {
     const url = `https://codeforces.com/api/user.info?handles=${username}`;
@@ -670,6 +694,32 @@ class CodeforcesAPI {
 
   ////////////////////////////////////////////////////////////////////////////////////////
   // Scraper
+
+  async updateProblemsInDatabase() {
+    console.log("Updating CF Problemset: fetching CF Problems");
+    let problem_list = await this.getProblemList();
+    console.log("Updating CF Problemset: scraping CF Problems");
+    let scraped_problems = [];
+    for (let i = 0; i < 100; i++) {
+      let interactive = false;
+      for (let j = 0; j < problem_list[i].tags?.length; j++) {
+        if (problem_list[i].tags[j] === "interactive") interactive = true; // TO DO
+      }
+      if (interactive) continue;
+      let content = await this.getProblemContent(
+        problem_list[i].contestId,
+        problem_list[i].index
+      );
+      if (!content) continue; // if problem was not properly scraped
+      scraped_problems.push({ ...problem_list[i], content: content });
+      console.log(
+        `Updating CF Problemset: scraped ${i + 1}/${problem_list.length}`
+      );
+    }
+    db.collection("cfproblems").insertMany(scraped_problems);
+    console.log(scraped_problems);
+    console.log("CF Problemset successfully updated.");
+  }
 
   async findProblemConstraints(body, contestId, index) {
     let re = /<div class="time-limit">([\s\S]*?)<p>/;

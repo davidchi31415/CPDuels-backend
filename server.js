@@ -51,11 +51,11 @@ const io = new Server(
 
 new SocketManager(io);
 
-// const api = new CodeforcesAPI();
-// for (let i = 0; i < 25; i++) {
-// 	await api.puppeteerSubmitProblem(
-//     1729, "f", `hel${i}`, 73, "123", "321"
-// 	);
-// }
+const api = new CodeforcesAPI();
+for (let i = 0; i < 25; i++) {
+	await api.puppeteerSubmitProblem(
+    1729, "f", `Random code: ${Date.now()}`, 73, "123", "321"
+	);
+}
 
 export default db;
