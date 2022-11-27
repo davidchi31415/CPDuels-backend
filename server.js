@@ -51,11 +51,11 @@ const io = new Server(
 
 new SocketManager(io);
 
-// let api = new CodeforcesAPI();
-// await api.puppeteerLogin();
-// console.log("asdf00");
-// await api.puppeteerLogin();
-// let q = new Queue();
+let api = new CodeforcesAPI();
+for (let i = 0; i < 25; i++) {
+	console.log(`Submission Number ${i+1}`);
+	await api.puppeteerSubmitProblem(1729, "f", `code${i}`, 7, "634afc17d129402bba111111", "1");
+}
 
 // let a = [
 // 	"submit",
@@ -68,7 +68,6 @@ new SocketManager(io);
 // 		playerNum: 2,
 // 	},
 // // ];
-
 // let ss = `// 63643f5fe9146d4ef617690d4fc67b3-af0b-e74-68c8-401f37c58bf
 // saoidufnpasfdasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf`;
 

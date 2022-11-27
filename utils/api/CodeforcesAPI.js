@@ -25,779 +25,795 @@ puppeteer.use(StealthPlugin());
 // );
 
 class CodeforcesAPI {
-	constructor() {
-		this.client = superagent.agent();
-		this.loginInfo = new circularArray([
-			["cpduels-bot", "davidandjeffrey"],
-			["cpduels-bot2", "davidandjeffrey"],
-			["cpduels-bot3", "davidandjeffrey"],
-			["cpduels-bot4", "davidandjeffrey"],
-			["cpduels-bot5", "davidandjeffrey"],
-			// ["cpduels-bot6", "davidandjeffrey"],
-			// ["cpduels-bot7", "davidandjeffrey"],
-			// ["cpduels-bot8", "davidandjeffrey"],
-			// ["cpduels-bot9", "davidandjeffrey"],
-			// ["cpduels-bot10", "davidandjeffrey"],
-		]);
-		this.puppeteer = false;
-	}
+  constructor() {
+    this.client = superagent.agent();
+    this.loginInfo = new circularArray([
+      // ["cpduels-bot", "davidandjeffrey"],
+      // ["cpduels-bot2", "davidandjeffrey"],
+      ["cpduels-bot3", "davidandjeffrey"],
+      ["cpduels-bot4", "davidandjeffrey"],
+      ["cpduels-bot5", "davidandjeffrey"],
+      // ["cpduels-bot6", "davidandjeffrey"],
+      // ["cpduels-bot7", "davidandjeffrey"],
+      // ["cpduels-bot8", "davidandjeffrey"],
+      // ["cpduels-bot9", "davidandjeffrey"],
+      // ["cpduels-bot10", "davidandjeffrey"],
+    ]);
+    this.currentBrowser = false;
+    this.loggedIn = false;
+    this.currentSubmissionCount = 0;
+    this.lastLoginTime = false;
+  }
 
-	/////////////////////////////////////////////////////////////////////////////////
-	// API
+  /////////////////////////////////////////////////////////////////////////////////
+  // API
 
-	async getAPIResponse(url, params) {
-		try {
-			let tries = 0;
-			let returnObj;
-			while (tries < 5) {
-				tries++;
-				let responseData = {
-					status: "",
-					comment: "",
-				};
-				await fetch(url, params).then(async (res) => {
-					if (res.status === 503) {
-						// Limit exceeded error
-						responseData.status = "FAILED";
-						responseData.comment = "limit exceeded";
-						await sleep(1000);
-					} else {
-						responseData = await res.json();
-					}
-				});
-				if (responseData?.status === "OK") return responseData;
-				returnObj = responseData;
-			}
-			return returnObj; // Return if fail after 5 tries and not limit exceeded
-		} catch (e) {
-			console.log(e);
-			return false;
-		}
-	}
+  async getAPIResponse(url, params) {
+    try {
+      let tries = 0;
+      let returnObj;
+      while (tries < 5) {
+        tries++;
+        let responseData = {
+          status: "",
+          comment: "",
+        };
+        await fetch(url, params).then(async (res) => {
+          if (res.status === 503) {
+            // Limit exceeded error
+            responseData.status = "FAILED";
+            responseData.comment = "limit exceeded";
+            await sleep(1000);
+          } else {
+            responseData = await res.json();
+          }
+        });
+        if (responseData?.status === "OK") return responseData;
+        returnObj = responseData;
+      }
+      return returnObj; // Return if fail after 5 tries and not limit exceeded
+    } catch (e) {
+      console.log(e);
+      return false;
+    }
+  }
 
-	async post(data) {
-		return await this.client
-			.post(data[0])
-			.send(data[1])
-			.set("Content-Type", "application/x-www-form-urlencoded");
-	}
+  async post(data) {
+    return await this.client
+      .post(data[0])
+      .send(data[1])
+      .set("Content-Type", "application/x-www-form-urlencoded");
+  }
 
-	async updateProblemsInDatabase() {
-		console.log("Updating CF Problemset: fetching CF Problems");
-		let problem_list = await this.getProblemList();
-		console.log("Updating CF Problemset: scraping CF Problems");
-		let scraped_problems = [];
-		for (let i = 0; i < 100; i++) {
-			let interactive = false;
-			for (let j = 0; j < problem_list[i].tags?.length; j++) {
-				if (problem_list[i].tags[j] === "interactive")
-					interactive = true; // TO DO
-			}
-			if (interactive) continue;
-			let content = await this.getProblemContent(
-				problem_list[i].contestId,
-				problem_list[i].index
-			);
-			if (!content) continue; // if problem was not properly scraped
-			scraped_problems.push({ ...problem_list[i], content: content });
-			console.log(
-				`Updating CF Problemset: scraped ${i + 1}/${
-					problem_list.length
-				}`
-			);
-		}
-		db.collection("cfproblems").insertMany(scraped_problems);
-		console.log(scraped_problems);
-		console.log("CF Problemset successfully updated.");
-	}
-	async ensureBrowser() {
-		this.puppeteer = await puppeteer.launch({
-			args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
-			headless: false,
-			ignoreHTTPSErrors: true,
-			executablePath: executablePath(),
-		});
-	}
+  async updateProblemsInDatabase() {
+    console.log("Updating CF Problemset: fetching CF Problems");
+    let problem_list = await this.getProblemList();
+    console.log("Updating CF Problemset: scraping CF Problems");
+    let scraped_problems = [];
+    for (let i = 0; i < 100; i++) {
+      let interactive = false;
+      for (let j = 0; j < problem_list[i].tags?.length; j++) {
+        if (problem_list[i].tags[j] === "interactive") interactive = true; // TO DO
+      }
+      if (interactive) continue;
+      let content = await this.getProblemContent(
+        problem_list[i].contestId,
+        problem_list[i].index
+      );
+      if (!content) continue; // if problem was not properly scraped
+      scraped_problems.push({ ...problem_list[i], content: content });
+      console.log(
+        `Updating CF Problemset: scraped ${i + 1}/${problem_list.length}`
+      );
+    }
+    db.collection("cfproblems").insertMany(scraped_problems);
+    console.log(scraped_problems);
+    console.log("CF Problemset successfully updated.");
+  }
+  async ensureBrowser() {
+    if (this.currentBrowser) return;
+    this.currentBrowser = await puppeteer.launch({
+      args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
+      headless: false,
+      ignoreHTTPSErrors: true,
+      executablePath: executablePath(),
+    });
+  }
+  async ensureLoggedIn() {
+    if (this.loggedIn) return;
+    await this.puppeteerLogin();
+  }
 
-	// async puppeteerLogin() {
-	// 	await this.ensureBrowser;
-	// 	if (!this.puppeteer) return false;
-	// 	const page = await this.puppeteer.newPage();
-	// 	await page.goto("https://codeforces.com/enter/", {
-	// 		waitUntil: "networkidle2",
-	// 	});
-	// 	const url = await page.openPortal();
-	// 	await page.waitForRequest(
-	// 		(req) => {
-	// 			if (req.method() !== "POST") return false;
-	// 			return req.url().split("?")[0].endsWith("/enter");
-	// 		},
-	// 		{ timeout: Time.day }
-	// 	);
-	// 	await page.waitForTimeout(10 * 1000);
-	// 	await this.clearPage(page);
-	// 	await this.puppeteer?.close();
-	// 	return true;
-	// }
+  // async puppeteerLogin() {
+  // 	await this.ensureBrowser;
+  // 	if (!this.currentBrowser) return false;
+  // 	const page = await this.currentBrowser.newPage();
+  // 	await page.goto("https://codeforces.com/enter/", {
+  // 		waitUntil: "networkidle2",
+  // 	});
+  // 	const url = await page.openPortal();
+  // 	await page.waitForRequest(
+  // 		(req) => {
+  // 			if (req.method() !== "POST") return false;
+  // 			return req.url().split("?")[0].endsWith("/enter");
+  // 		},
+  // 		{ timeout: Time.day }
+  // 	);
+  // 	await page.waitForTimeout(10 * 1000);
+  // 	await this.clearPage(page);
+  // 	await this.currentBrowser?.close();
+  // 	return true;
+  // }
 
-	async logout() {
-		await page.close();
-		await this.puppeteer.close();
-	}
+  async logout() {
+    await this.currentBrowser.close();
+    this.currentBrowser = false;
+    this.currentSubmissionCount = 0;
+    this.loggedIn = false;
+  }
 
-	async getCsrf(url) {
-		await this.ensureBrowser();
-		if (!this.puppeteer) return false;
-		const page = await this.puppeteer.newPage();
-		let res = await page
-			.goto(url, {
-				waitUntil: "networkidle2",
-			})
-			.then((result) => result.text());
-		const $ = cheerio.load(res);
-		return $(".csrf-token").attr("data-csrf");
-	}
+  async getCsrf(url) {
+    await this.ensureBrowser();
+    if (!this.currentBrowser) return false;
+    const page = await this.currentBrowser.newPage();
+    let res = await page
+      .goto(url, {
+        waitUntil: "networkidle2",
+      })
+      .then((result) => result.text());
+    const $ = cheerio.load(res);
+    return $(".csrf-token").attr("data-csrf");
+  }
 
-	async puppeteerLogin() {
-		await this.ensureBrowser();
-		if (!this.puppeteer) return false;
-		const page = await this.puppeteer.newPage();
-		await page.goto("https://codeforces.com/enter/", {
-			waitUntil: "networkidle2",
-		});
-		// console.log(res);
-		let login = this.loginInfo.getCurAndUpdate();
-		// console.log(login[0]);
-		await page.waitForSelector("input[id=handleOrEmail]");
-		await page.type("input[id=handleOrEmail]", login[0]);
-		await page.waitForSelector("input[id=password]");
-		await page.type("input[id=password]", login[1]);
-		await page.waitForSelector("input[class=submit]");
-		await page.click("input[class=submit]");
-		await page.waitForNavigation({ waitUntil: "networkidle2" });
-		let re = /cpduels-bot/gs;
-		let resp = await page.content();
-		if (!(await resp).match(re)) {
-			this.logout();
-			throw "Request failed. Check handleOrEmail or password";
-		}
-		console.log("Login Succeeded");
+  async puppeteerLogin() {
+    await this.ensureBrowser();
+    if (!this.currentBrowser) return false;
+    const page = await this.currentBrowser.newPage();
+    await page.goto("https://codeforces.com/enter/", {
+      waitUntil: "networkidle2",
+    });
+    let login = this.loginInfo.getCurAndUpdate();
+    await page.waitForSelector("input[id=handleOrEmail]");
+    await page.type("input[id=handleOrEmail]", login[0]);
+    await page.waitForSelector("input[id=password]");
+    await page.type("input[id=password]", login[1]);
+    await page.waitForSelector("input[class=submit]");
+    await page.click("input[class=submit]");
+    await page.waitForNavigation({ waitUntil: "networkidle2" });
+    let re = /cpduels-bot/gs;
+    let resp = await page.content();
+    if (!(await resp).match(re)) {
+      this.logout();
+      throw "Request failed. Check handleOrEmail or password";
+    }
+    console.log("Login Succeeded");
+    this.lastLoginTime = Date.now();
+    this.loggedIn = true;
+  }
 
-		// try {
-		// 	let res = await this.client
-		// 		.post("https://codeforces.com/enter/")
-		// 		.send({
-		// 			_tta: "176",
-		// 			csrf_token: csrf,
-		// 			action: "enter",
-		// 			handleOrEmail: login[0],
-		// 			password: login[1],
-		// 		})
-		// 		.set("Content-Type", "application/x-www-form-urlencoded");
-		// 	console.log(res.status);
-		// 	let re = /cpduels-bot/gs;
-		// 	if (!(await res.text.match(re))) {
-		// 		throw "Request failed. Check handleOrEmail or password";
-		// 	}
-		// 	console.log("Login Succeeded");
-		// } catch (err) {
-		// 	console.log("codeforces might be down");
-		// 	console.log(`Login failed: \n ${err}`);
-		// }
-	}
+  async normalLogin() {
+    try {
+      let resp = await this.client.get("https://codeforces.com/enter/");
+      console.log(resp.status);
+      let login = this.loginInfo.getCurAndUpdate();
+      let csrf = findCsrf(resp.text);
+      let res = await this.client
+        .post("https://codeforces.com/enter/")
+        .send({
+          _tta: "176",
+          csrf_token: csrf,
+          action: "enter",
+          handleOrEmail: login[0],
+          password: login[1],
+        })
+        .set("Content-Type", "application/x-www-form-urlencoded");
+      console.log(res.status);
+      let re = /cpduels-bot/gs;
+      if (!(await res.text.match(re))) {
+        throw "Request failed. Check handleOrEmail or password";
+      }
+      console.log("Login Succeeded");
+    } catch (err) {
+      console.log("codeforces might be down");
+      console.log(`Login failed: \n ${err}`);
+    }
+  }
+  toComment(programTypeId, text) {
+    if (
+      [
+        43,
+        80,
+        52,
+        50,
+        54,
+        73,
+        59,
+        61, // C++
+        65,
+        79,
+        9, // C#
+        28, // D
+        32, // Go
+        60,
+        74,
+        36, // Java
+        48,
+        72,
+        77, //Kotlin
+        3, // Delphi 7
+        4,
+        51, //Pascal
+        6, // PHP
+        75, // Rust
+        20, // Scala
+        34,
+        55, // Javascript
+      ].includes(programTypeId)
+    ) {
+      return `// ${text}`;
+    }
 
-	async normalLogin() {
-		try {
-			let resp = await this.client.get("https://codeforces.com/enter/");
-			console.log(resp.status);
-			let login = this.loginInfo.getCurAndUpdate();
-			let csrf = findCsrf(resp.text);
-			let res = await this.client
-				.post("https://codeforces.com/enter/")
-				.send({
-					_tta: "176",
-					csrf_token: csrf,
-					action: "enter",
-					handleOrEmail: login[0],
-					password: login[1],
-				})
-				.set("Content-Type", "application/x-www-form-urlencoded");
-			console.log(res.status);
-			let re = /cpduels-bot/gs;
-			if (!(await res.text.match(re))) {
-				throw "Request failed. Check handleOrEmail or password";
-			}
-			console.log("Login Succeeded");
-		} catch (err) {
-			console.log("codeforces might be down");
-			console.log(`Login failed: \n ${err}`);
-		}
-	}
-	toComment(programTypeId, text) {
-		if (
-			[
-				43,
-				80,
-				52,
-				50,
-				54,
-				73,
-				59,
-				61, // C++
-				65,
-				79,
-				9, // C#
-				28, // D
-				32, // Go
-				60,
-				74,
-				36, // Java
-				48,
-				72,
-				77, //Kotlin
-				3, // Delphi 7
-				4,
-				51, //Pascal
-				6, // PHP
-				75, // Rust
-				20, // Scala
-				34,
-				55, // Javascript
-			].includes(programTypeId)
-		) {
-			return `// ${text}`;
-		}
+    if (
+      [
+        13, // Perl #
+        7,
+        31,
+        40,
+        41,
+        70, // Python #
+        67, // Ruby #
+      ].includes(programTypeId)
+    ) {
+      return `# ${text}`;
+    }
 
-		if (
-			[
-				13, // Perl #
-				7,
-				31,
-				40,
-				41,
-				70, // Python #
-				67, // Ruby #
-			].includes(programTypeId)
-		) {
-			return `# ${text}`;
-		}
+    if (programTypeId === 12) {
+      // Haskell --
+      return `-- ${text}`;
+    }
 
-		if (programTypeId === 12) {
-			// Haskell --
-			return `-- ${text}`;
-		}
+    if (programTypeId === 19) {
+      // Ocaml ['(*','*)']
+      return `(* ${text} *)`;
+    }
+  }
 
-		if (programTypeId === 19) {
-			// Ocaml ['(*','*)']
-			return `(* ${text} *)`;
-		}
-	}
+  //https://codeforces.com/contest/1729/submission/177820677
 
-	//https://codeforces.com/contest/1729/submission/177820677
+  async getPendingSubmissionsFromDatabase() {
+    let result = await db
+      .collection("submissions")
+      .find(
+        {
+          platform: "CF",
+          status: "PENDING",
+        },
+        {}
+      )
+      .toArray();
+    return result;
+  }
 
-	async getPendingSubmissionsFromDatabase() {
-		let result = await db
-			.collection("submissions")
-			.find(
-				{
-					platform: "CF",
-					status: "PENDING",
-				},
-				{}
-			)
-			.toArray();
-		return result;
-	}
+  async updateSubmissions() {
+    let dbSubmissions = await this.getPendingSubmissionsFromDatabase();
+    if (!dbSubmissions.length) {
+      console.log("there are no sumissions to update :)");
+      return;
+    }
+    let submissions = await this.getUserSubmissions("cpduels-bot");
+    let submissionCounter = dbSubmissions.length;
+    for (let i = 0; i < submissions.length; i++) {
+      if (submissionCounter === 0) break; // If there are no PENDING submissions, don't check
+      let submission = submissions[i];
+      let duelId, uid;
+      let info = await this.getSubmissionUserInfo(submission);
+      console.log("Found info");
+      console.log(info);
+      let verdict = submission.verdict ? submission.verdict : "PENDING";
+      if (verdict === "TESTING") continue;
+      if (info) {
+        ({ duelId, uid } = info);
+        let findSubmission = await db
+          .collection("submissions")
+          .find(
+            {
+              duelId: ObjectId(duelId),
+              uid: uid,
+            },
+            {}
+          )
+          .toArray();
+        console.log(findSubmission);
+        if (findSubmission.length != 0) {
+          console.log("Found summission in database");
+          // update submission
+          if (findSubmission[0].status !== "PENDING") continue; // Only update if it is a pending submission
+          await db.collection("submissions").findOneAndUpdate(
+            {
+              duelId: ObjectId(duelId),
+              uid: uid,
+            },
+            {
+              $set: {
+                status: verdict,
+                submissionId: submission.id,
+              },
+            }
+          );
+          submissionCounter--; // Mark off the submission (from pending submissions we were looking for)
+          console.log(
+            `Updated player ${uid}'s submission with id ${submission.id} in duel ${duelId} to ${submission.verdict}`
+          );
+        } else {
+          console.log(`No player/duel info on submission ${submission.id}`);
+        }
+      } else {
+        console.log(`Submission ${submission.id} has invalid info ${info}`);
+      }
+    }
+  }
 
-	async updateSubmissions() {
-		let dbSubmissions = await this.getPendingSubmissionsFromDatabase();
-		if (!dbSubmissions.length) {
-			console.log("there are no sumissions to update :)");
-			return;
-		}
-		let submissions = await this.getUserSubmissions("cpduels-bot");
-		let submissionCounter = dbSubmissions.length;
-		for (let i = 0; i < submissions.length; i++) {
-			if (submissionCounter === 0) break; // If there are no PENDING submissions, don't check
-			let submission = submissions[i];
-			let duelId, uid;
-			let info = await this.getSubmissionUserInfo(submission);
-			console.log("Found info");
-			console.log(info);
-			let verdict = submission.verdict ? submission.verdict : "PENDING";
-			if (verdict === "TESTING") continue;
-			if (info) {
-				({ duelId, uid } = info);
-				let findSubmission = await db
-					.collection("submissions")
-					.find(
-						{
-							duelId: ObjectId(duelId),
-							uid: uid,
-						},
-						{}
-					)
-					.toArray();
-				console.log(findSubmission);
-				if (findSubmission.length != 0) {
-					console.log("Found summission in database");
-					// update submission
-					if (findSubmission[0].status !== "PENDING") continue; // Only update if it is a pending submission
-					await db.collection("submissions").findOneAndUpdate(
-						{
-							duelId: ObjectId(duelId),
-							uid: uid,
-						},
-						{
-							$set: {
-								status: verdict,
-								submissionId: submission.id,
-							},
-						}
-					);
-					submissionCounter--; // Mark off the submission (from pending submissions we were looking for)
-					console.log(
-						`Updated player ${uid}'s submission with id ${submission.id} in duel ${duelId} to ${submission.verdict}`
-					);
-				} else {
-					console.log(
-						`No player/duel info on submission ${submission.id}`
-					);
-				}
-			} else {
-				console.log(
-					`Submission ${submission.id} has invalid info ${info}`
-				);
-			}
-		}
-	}
+  async getSubmissionUserInfo(submission) {
+    let source = await this.getSubmissionSource(
+      submission.contestId,
+      submission.id
+    );
+    try {
+      return await this.getSubmissionInfoFromSource(source);
+    } catch {
+      return 0;
+    }
+  }
 
-	async getSubmissionUserInfo(submission) {
-		let source = await this.getSubmissionSource(
-			submission.contestId,
-			submission.id
-		);
-		try {
-			return await this.getSubmissionInfoFromSource(source);
-		} catch {
-			return 0;
-		}
-	}
+  async getSubmissionSource(contestId, id) {
+    let url = `https://codeforces.com/contest/${contestId}/submission/${id}`;
+    let res;
+    while (!res || res.status != 200) {
+      try {
+        res = await this.client.get(url);
+      } catch {}
+    }
 
-	async getSubmissionSource(contestId, id) {
-		let url = `https://codeforces.com/contest/${contestId}/submission/${id}`;
-		let res;
-		while (!res || res.status != 200) {
-			try {
-				res = await this.client.get(url);
-			} catch {}
-		}
+    const $ = cheerio.load(res.text);
+    return $('pre[id="program-source-text"]').text();
+  }
 
-		const $ = cheerio.load(res.text);
-		return $('pre[id="program-source-text"]').text();
-	}
+  getSubmissionInfoFromSource(text) {
+    let comment = text.split(/\r?\n|\r|\n/g)[0];
+    let totalResult = comment.match(/[a-z0-9-]*/gs).filter((e) => {
+      return e !== "";
+    })[0];
+    console.log(totalResult);
+    return {
+      duelId: totalResult.slice(0, 24),
+      uid: totalResult.slice(24),
+    };
+  }
 
-	getSubmissionInfoFromSource(text) {
-		let comment = text.split(/\r?\n|\r|\n/g)[0];
-		let totalResult = comment.match(/[a-z0-9-]*/gs).filter((e) => {
-			return e !== "";
-		})[0];
-		console.log(totalResult);
-		return {
-			duelId: totalResult.slice(0, 24),
-			uid: totalResult.slice(24),
-		};
-	}
+  checkIfLogoutNecessary() {
+    if (!this.lastLoginTime || !this.currentBrowser) return false;
+    console.log(this.currentSubmissionCount);
+    if (this.currentSubmissionCount >= 20) return true;
+    return false;
+  }
 
-	async submitProblem(
-		contestId,
-		problemIndex,
-		sourceCode,
-		programTypeId,
-		duelId,
-		uid
-	) {
-		try {
-			sourceCode = `${this.toComment(
-				programTypeId,
-				`${duelId}${uid}`
-			)}\n${sourceCode}`;
-			console.log(sourceCode);
-			let csrf = await this.getCsrf(
-				`https://codeforces.com/contest/${contestId}/submit`
-			);
-			let submitUrl = `https://codeforces.com/contest/${contestId}/submit?csrf_token=${csrf}`;
-			let res = await this.post([
-				submitUrl,
-				{
-					csrf_token: csrf,
-					action: "submitSolutionFormSubmitted",
-					submittedProblemIndex: problemIndex,
-					programTypeId: programTypeId,
-					contestId: contestId,
-					source: sourceCode,
-					tabSize: "4",
-					_tta: "594",
-					sourceCodeConfirmed: "true",
-				},
-			]);
+  async puppeteerSubmitProblem(
+    contestId,
+    problemIndex,
+    sourceCode,
+    programTypeId,
+    duelId,
+    uid
+  ) {
+    try {
+      sourceCode = `${this.toComment(
+        programTypeId,
+        `${duelId}${uid}`
+      )}\n${sourceCode}`;
+      console.log(sourceCode);
+      await this.ensureLoggedIn();
+      if (!this.currentBrowser) return false;
+      const page = await this.currentBrowser.newPage();
+      await page.goto(`https://codeforces.com/contest/${contestId}/submit`, {
+        waitUntil: "networkidle2",
+      });
+      await page.waitForSelector('select[name="submittedProblemIndex"]');
+      await page.select(
+        'select[name="submittedProblemIndex"]',
+        problemIndex.toUpperCase()
+      );
+      await page.waitForSelector('select[name="programTypeId"]');
+      await page.select('select[name="programTypeId"]', `${programTypeId}`);
+      await page.waitForSelector('textarea[class="ace_text-input"]');
+      await page.type('textarea[class="ace_text-input"]', sourceCode);
+      await page.waitForSelector('input[value="Submit"]');
+      await page.click('input[value="Submit"]');
+      this.currentSubmissionCount++;
+      await page.waitForNavigation({ waitUntil: "networkidle2" }); // FIX, sometimes this times out
+      console.log("Submitted successfully.");
+      if (this.checkIfLogoutNecessary()) await this.logout();
+    } catch (err) {
+      console.log(
+        `Submitting solution for ${contestId}${problemIndex} Failed: \n ${err}`
+      );
+    }
+  }
 
-			const $ = cheerio.load(res.text);
-			const error = $('span[class="error for__source"]').text();
-			if (error !== "") throw error;
-			else {
-				let timeSubmitted = new Date().toLocaleString() + " CT";
-				await db.collection("submissions").insertOne({
-					platform: "CF",
-					timeSubmitted: timeSubmitted,
-					duelId: duelId,
-					uid: uid,
-					status: "PENDING",
-				});
+  async submitProblem(
+    contestId,
+    problemIndex,
+    sourceCode,
+    programTypeId,
+    duelId,
+    uid
+  ) {
+    try {
+      sourceCode = `${this.toComment(
+        programTypeId,
+        `${duelId}${uid}`
+      )}\n${sourceCode}`;
+      console.log(sourceCode);
+      let csrf = await this.getCsrf(
+        `https://codeforces.com/contest/${contestId}/submit`
+      );
+      let submitUrl = `https://codeforces.com/contest/${contestId}/submit?csrf_token=${csrf}`;
+      let res = await this.post([
+        submitUrl,
+        {
+          csrf_token: csrf,
+          action: "submitSolutionFormSubmitted",
+          submittedProblemIndex: problemIndex,
+          programTypeId: programTypeId,
+          contestId: contestId,
+          source: sourceCode,
+          tabSize: "4",
+          _tta: "594",
+          sourceCodeConfirmed: "true",
+        },
+      ]);
 
-				console.log(
-					`Submitted solution for ${contestId}${problemIndex}`
-				);
-			}
-		} catch (err) {
-			console.log(
-				`Submitting solution for ${contestId}${problemIndex} Failed: \n ${err}`
-			);
-		}
-	}
+      const $ = cheerio.load(res.text);
+      const error = $('span[class="error for__source"]').text();
+      if (error !== "") throw error;
+      else {
+        let timeSubmitted = new Date().toLocaleString() + " CT";
+        await db.collection("submissions").insertOne({
+          platform: "CF",
+          timeSubmitted: timeSubmitted,
+          duelId: duelId,
+          uid: uid,
+          status: "PENDING",
+        });
 
-	async checkUsername(username) {
-		const url = `https://codeforces.com/api/user.info?handles=${username}`;
-		const response = await this.getAPIResponse(url);
-		if (!response) {
-			return [false, "Codeforces API Error"];
-		}
-		if (response.status === "FAILED") {
-			return [false, response.comment];
-		}
-		return [true, response.result[0]];
-	}
+        console.log(`Submitted solution for ${contestId}${problemIndex}`);
+      }
+    } catch (err) {
+      console.log(
+        `Submitting solution for ${contestId}${problemIndex} Failed: \n ${err}`
+      );
+    }
+  }
 
-	async checkDuelParams(username, ratingMin, ratingMax) {
-		// For validating duel creation request
-		let validUsername;
-		if (username === "!GUEST!") validUsername = true;
-		else validUsername = await this.checkUsername(username);
-		if (!validUsername) {
-			return [false, "Inavlid CF Username"];
-		}
-		let validRatings =
-			ratingMin &&
-			ratingMax &&
-			ratingMin <= ratingMax &&
-			ratingMin >= 800 &&
-			ratingMax <= 3000;
-		if (!validRatings) {
-			return [false, "Invalid CF Ratings"];
-		}
-		return [true, "good"];
-	}
+  async checkUsername(username) {
+    const url = `https://codeforces.com/api/user.info?handles=${username}`;
+    const response = await this.getAPIResponse(url);
+    if (!response) {
+      return [false, "Codeforces API Error"];
+    }
+    if (response.status === "FAILED") {
+      return [false, response.comment];
+    }
+    return [true, response.result[0]];
+  }
 
-	async getUserSubmissions(username) {
-		const url = `https://codeforces.com/api/user.status?handle=${username}`;
-		console.log(url);
-		const response = await this.getAPIResponse(url);
-		if (!response) return [false, "CF API Error"];
-		if (response.status !== "OK") return [false, response.comment];
-		let data = [];
-		try {
-			response.result.forEach((submission) => {
-				let problem = submission.problem;
-				if (!problem.hasOwnProperty("rating")) return;
-				if (!submission.hasOwnProperty("verdict"))
-					submission.verdict = null;
-				data.push({
-					id: submission.id,
-					contestId: problem.contestId,
-					index: problem.index,
-					name: problem.name,
-					type: problem.type,
-					rating: problem.rating,
-					creationTimeSeconds: submission.creationTimeSeconds,
-					verdict: submission.verdict,
-				});
-			});
-		} catch (e) {
-			console.log("Getting User Submissions FAILED");
-		}
-		return data;
-	}
+  async checkDuelParams(username, ratingMin, ratingMax) {
+    // For validating duel creation request
+    let validUsername;
+    if (username === "!GUEST!") validUsername = true;
+    else validUsername = await this.checkUsername(username);
+    if (!validUsername) {
+      return [false, "Inavlid CF Username"];
+    }
+    let validRatings =
+      ratingMin &&
+      ratingMax &&
+      ratingMin <= ratingMax &&
+      ratingMin >= 800 &&
+      ratingMax <= 3000;
+    if (!validRatings) {
+      return [false, "Invalid CF Ratings"];
+    }
+    return [true, "good"];
+  }
 
-	async getUserSubmissionsAfterTime(username, time) {
-		const url = `https://codeforces.com/api/user.status?handle=${username}`;
-		console.log(url);
-		let time1 = Date.now();
-		const response = await this.getAPIResponse(url);
-		console.log(time1 - Date.now());
-		if (!response) return [false, "CF API Error"];
-		if (response.status !== "OK") return [false, response.comment];
-		let data = [];
-		try {
-			let time2 = Date.now();
-			for (let i = 0; i < response.result.length; i++) {
-				let submission = response.result[i];
-				if (submission.creationTimeSeconds < time) break;
-				if (!submission.hasOwnProperty("verdict"))
-					submission.verdict = null;
-				let problem = submission.problem;
-				data.push({
-					contestId: problem.contestId,
-					index: problem.index,
-					name: problem.name,
-					type: problem.type,
-					rating: problem.rating,
-					creationTimeSeconds: submission.creationTimeSeconds,
-					verdict: submission.verdict,
-				});
-			}
-			console.log(Date.now() - time2);
-		} catch (e) {
-			console.log("Getting User Submissions FAILED: " + e);
-		}
-		return data;
-	}
+  async getUserSubmissions(username) {
+    const url = `https://codeforces.com/api/user.status?handle=${username}`;
+    console.log(url);
+    const response = await this.getAPIResponse(url);
+    if (!response) return [false, "CF API Error"];
+    if (response.status !== "OK") return [false, response.comment];
+    let data = [];
+    try {
+      response.result.forEach((submission) => {
+        let problem = submission.problem;
+        if (!problem.hasOwnProperty("rating")) return;
+        if (!submission.hasOwnProperty("verdict")) submission.verdict = null;
+        data.push({
+          id: submission.id,
+          contestId: problem.contestId,
+          index: problem.index,
+          name: problem.name,
+          type: problem.type,
+          rating: problem.rating,
+          creationTimeSeconds: submission.creationTimeSeconds,
+          verdict: submission.verdict,
+        });
+      });
+    } catch (e) {
+      console.log("Getting User Submissions FAILED");
+    }
+    return data;
+  }
 
-	async getContestList() {
-		const url = "https://codeforces.com/api/contest.list";
-		const response = await this.getAPIResponse(url);
-		if (!response) {
-			return false;
-		}
-		return response["result"];
-	}
+  async getUserSubmissionsAfterTime(username, time) {
+    const url = `https://codeforces.com/api/user.status?handle=${username}`;
+    console.log(url);
+    let time1 = Date.now();
+    const response = await this.getAPIResponse(url);
+    console.log(time1 - Date.now());
+    if (!response) return [false, "CF API Error"];
+    if (response.status !== "OK") return [false, response.comment];
+    let data = [];
+    try {
+      let time2 = Date.now();
+      for (let i = 0; i < response.result.length; i++) {
+        let submission = response.result[i];
+        if (submission.creationTimeSeconds < time) break;
+        if (!submission.hasOwnProperty("verdict")) submission.verdict = null;
+        let problem = submission.problem;
+        data.push({
+          contestId: problem.contestId,
+          index: problem.index,
+          name: problem.name,
+          type: problem.type,
+          rating: problem.rating,
+          creationTimeSeconds: submission.creationTimeSeconds,
+          verdict: submission.verdict,
+        });
+      }
+      console.log(Date.now() - time2);
+    } catch (e) {
+      console.log("Getting User Submissions FAILED: " + e);
+    }
+    return data;
+  }
 
-	async getProblemList() {
-		const url = "https://codeforces.com/api/problemset.problems";
-		const response = await this.getAPIResponse(url);
-		if (!response) {
-			return false;
-		}
-		return response["result"]["problems"];
-	}
+  async getContestList() {
+    const url = "https://codeforces.com/api/contest.list";
+    const response = await this.getAPIResponse(url);
+    if (!response) {
+      return false;
+    }
+    return response["result"];
+  }
 
-	async getProblems(filter = {}, fields = {}) {
-		// filter for the problems we're looking for
-		// fields for the parts of the problems
+  async getProblemList() {
+    const url = "https://codeforces.com/api/problemset.problems";
+    const response = await this.getAPIResponse(url);
+    if (!response) {
+      return false;
+    }
+    return response["result"]["problems"];
+  }
 
-		let result = await db
-			.collection("cfproblems")
-			.find(filter, fields)
-			.toArray();
+  async getProblems(filter = {}, fields = {}) {
+    // filter for the problems we're looking for
+    // fields for the parts of the problems
 
-		return result;
-	}
+    let result = await db
+      .collection("cfproblems")
+      .find(filter, fields)
+      .toArray();
 
-	async getProblemsByUsernamesAndRating(usernames, ratingMin, ratingMax) {
-		let ratedProblems = await this.getProblems({
-			rating: { $gte: ratingMin, $lte: ratingMax },
-		});
-		let submissions1 = await this.getUserSubmissions(usernames[0]);
-		let submissions2 = await this.getUserSubmissions(usernames[1]);
-		let combined_submissions = submissions1.concat(
-			submissions2.filter((item) => submissions1.indexOf(item) < 0)
-		);
+    return result;
+  }
 
-		//contestId index
-		let filteredProblems = ratedProblems;
-		if (combined_submissions.length != 0) {
-			filteredProblems = ratedProblems.filter((problem) => {
-				return !combined_submissions.some((f) => {
-					return (
-						f.contestId === problem.contestId &&
-						f.index === problem.index
-					);
-				});
-			});
-		}
-		return filteredProblems;
-	}
+  async getProblemsByUsernamesAndRating(usernames, ratingMin, ratingMax) {
+    let ratedProblems = await this.getProblems({
+      rating: { $gte: ratingMin, $lte: ratingMax },
+    });
+    let submissions1 = await this.getUserSubmissions(usernames[0]);
+    let submissions2 = await this.getUserSubmissions(usernames[1]);
+    let combined_submissions = submissions1.concat(
+      submissions2.filter((item) => submissions1.indexOf(item) < 0)
+    );
 
-	async generateProblems(numProblems, usernames, ratingMin, ratingMax) {
-		let problems = await this.getProblemsByUsernamesAndRating(
-			usernames,
-			ratingMin,
-			ratingMax
-		);
-		let problemSet = problems.sort(() => 0.5 - Math.random());
-		return problemSet.slice(0, numProblems);
-	}
+    //contestId index
+    let filteredProblems = ratedProblems;
+    if (combined_submissions.length != 0) {
+      filteredProblems = ratedProblems.filter((problem) => {
+        return !combined_submissions.some((f) => {
+          return f.contestId === problem.contestId && f.index === problem.index;
+        });
+      });
+    }
+    return filteredProblems;
+  }
 
-	////////////////////////////////////////////////////////////////////////////////////////
-	// Scraper
+  async generateProblems(numProblems, usernames, ratingMin, ratingMax) {
+    let problems = await this.getProblemsByUsernamesAndRating(
+      usernames,
+      ratingMin,
+      ratingMax
+    );
+    let problemSet = problems.sort(() => 0.5 - Math.random());
+    return problemSet.slice(0, numProblems);
+  }
 
-	async findProblemConstraints(body, contestId, index) {
-		let re = /<div class="time-limit">([\s\S]*?)<p>/;
-		try {
-			let raw = body.match(re)[0];
-			return raw.substring(0, raw.length - 3);
-		} catch (e) {
-			console.log(
-				`Couldn't fetch problem ${contestId}${index} constraints: ` + e
-			);
-		}
-	}
+  ////////////////////////////////////////////////////////////////////////////////////////
+  // Scraper
 
-	async findProblemStatement(body, contestId, index) {
-		let re1 =
-			/<div class="problem-statement">([\s\S]*?)<div class="input-specification">/;
-		try {
-			let totalProblemStatement = body.match(re1)[0];
-			let re2 = /<p>(.*?)<\/div><div class="input-specification">/;
-			let problemStatement = totalProblemStatement.match(re2)[1];
-			problemStatement = problemStatement.replace(
-				/\$\$\$\$\$\$(.*?)\$\$\$\$\$\$/g,
-				"\\[$1\\]"
-			);
-			problemStatement = problemStatement.replace(
-				/\$\$\$(.*?)\$\$\$/g,
-				"\\($1\\)"
-			);
-			return problemStatement;
-		} catch (e) {
-			console.log(
-				`Couldn't fetch problem ${contestId}${index} statement: ` + e
-			);
-		}
-	}
+  async findProblemConstraints(body, contestId, index) {
+    let re = /<div class="time-limit">([\s\S]*?)<p>/;
+    try {
+      let raw = body.match(re)[0];
+      return raw.substring(0, raw.length - 3);
+    } catch (e) {
+      console.log(
+        `Couldn't fetch problem ${contestId}${index} constraints: ` + e
+      );
+    }
+  }
 
-	async findProblemInput(body, contestId, index) {
-		let re =
-			/<div class="input-specification"><div class="section-title">Input<\/div>([\s\S]*?)<\/div><div class="output-specification">/;
-		try {
-			return body.match(re)[1];
-		} catch (e) {
-			console.log(
-				`Couldn't fetch problem ${contestId}${index} input: ` + e
-			);
-		}
-	}
+  async findProblemStatement(body, contestId, index) {
+    let re1 =
+      /<div class="problem-statement">([\s\S]*?)<div class="input-specification">/;
+    try {
+      let totalProblemStatement = body.match(re1)[0];
+      let re2 = /<p>(.*?)<\/div><div class="input-specification">/;
+      let problemStatement = totalProblemStatement.match(re2)[1];
+      problemStatement = problemStatement.replace(
+        /\$\$\$\$\$\$(.*?)\$\$\$\$\$\$/g,
+        "\\[$1\\]"
+      );
+      problemStatement = problemStatement.replace(
+        /\$\$\$(.*?)\$\$\$/g,
+        "\\($1\\)"
+      );
+      return problemStatement;
+    } catch (e) {
+      console.log(
+        `Couldn't fetch problem ${contestId}${index} statement: ` + e
+      );
+    }
+  }
 
-	async findProblemOutput(body, contestId, index) {
-		let re =
-			/<div class="output-specification"><div class="section-title">Output<\/div>([\s\S]*?)<\/div><div class="sample-tests">/;
-		try {
-			return body.match(re)[1];
-		} catch (e) {
-			console.log(
-				`Couldn't fetch problem ${contestId}${index} input: ` + e
-			);
-		}
-	}
+  async findProblemInput(body, contestId, index) {
+    let re =
+      /<div class="input-specification"><div class="section-title">Input<\/div>([\s\S]*?)<\/div><div class="output-specification">/;
+    try {
+      return body.match(re)[1];
+    } catch (e) {
+      console.log(`Couldn't fetch problem ${contestId}${index} input: ` + e);
+    }
+  }
 
-	async findProblemTestCases(body, contestId, index) {
-		let re = /<div class="sample-tests">([\s\S]*?)<\/div><\/div><\/div>/;
-		try {
-			return body.match(re)[0];
-		} catch (e) {
-			console.log(
-				`Couldn't fetch problem ${contestId}${index} test cases: ` + e
-			);
-		}
-	}
+  async findProblemOutput(body, contestId, index) {
+    let re =
+      /<div class="output-specification"><div class="section-title">Output<\/div>([\s\S]*?)<\/div><div class="sample-tests">/;
+    try {
+      return body.match(re)[1];
+    } catch (e) {
+      console.log(`Couldn't fetch problem ${contestId}${index} input: ` + e);
+    }
+  }
 
-	async findProblemNote(body, contestId, index) {
-		let re = /<div class="note">([\s\S]*?)<\/p><\/div>/;
-		try {
-			return body.match(re)[0];
-		} catch (e) {
-			console.log(
-				`Couldn't fetch problem ${contestId}${index} note: It probably doesn't have one.`
-			);
-		}
-	}
+  async findProblemTestCases(body, contestId, index) {
+    let re = /<div class="sample-tests">([\s\S]*?)<\/div><\/div><\/div>/;
+    try {
+      return body.match(re)[0];
+    } catch (e) {
+      console.log(
+        `Couldn't fetch problem ${contestId}${index} test cases: ` + e
+      );
+    }
+  }
 
-	async getProblemContent(contestId, index) {
-		const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-		let resp;
-		try {
-			resp = await this.client.get(
-				`https://codeforces.com/problemset/problem/${contestId}/${index}`
-			);
-		} catch (e) {
-			console.log(
-				`Couldn't fetch problem ${contestId}${index}, will retry: ` + e
-			);
-		}
-		while (!resp || !resp.ok) {
-			await sleep(100);
-			try {
-				resp = await this.client.get(
-					`https://codeforces.com/problemset/problem/${contestId}/${index}`
-				);
-			} catch (e) {
-				console.log(
-					`Couldn't fetch problem ${contestId}${index}, will retry: ` +
-						e
-				);
-			}
-		}
-		try {
-			// translate Codeforces's inline and display equation delimiters to something MathJax understands
-			let texFilteredResp = resp.text.replace(
-				/\$\$\$\$\$\$(.*?)\$\$\$\$\$\$/g,
-				"\\[$1\\]"
-			);
-			texFilteredResp = texFilteredResp.replace(
-				/\$\$\$(.*?)\$\$\$/g,
-				"\\($1\\)"
-			);
-			let problemConstraints = await this.findProblemConstraints(
-				texFilteredResp,
-				contestId,
-				index
-			);
-			let problemStatement = await this.findProblemStatement(
-				texFilteredResp,
-				contestId,
-				index
-			);
-			let problemInput = await this.findProblemInput(
-				texFilteredResp,
-				contestId,
-				index
-			);
-			let problemOutput = await this.findProblemOutput(
-				texFilteredResp,
-				contestId,
-				index
-			);
-			let problemTestCases = await this.findProblemTestCases(
-				texFilteredResp,
-				contestId,
-				index
-			);
-			let problemNote = await this.findProblemNote(
-				texFilteredResp,
-				contestId,
-				index
-			);
-			if (
-				!problemConstraints ||
-				!problemStatement ||
-				!problemInput ||
-				!problemOutput ||
-				!problemTestCases
-			)
-				return false;
-			return {
-				constraints: problemConstraints,
-				statement: problemStatement,
-				input: problemInput,
-				output: problemOutput,
-				testCases: problemTestCases,
-				note: problemNote,
-			};
-		} catch (e) {
-			console.log(
-				`Couldn't fetch problem ${contestId}${index} content: ` + e
-			);
-		}
-	}
+  async findProblemNote(body, contestId, index) {
+    let re = /<div class="note">([\s\S]*?)<\/p><\/div>/;
+    try {
+      return body.match(re)[0];
+    } catch (e) {
+      console.log(
+        `Couldn't fetch problem ${contestId}${index} note: It probably doesn't have one.`
+      );
+    }
+  }
+
+  async getProblemContent(contestId, index) {
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    let resp;
+    try {
+      resp = await this.client.get(
+        `https://codeforces.com/problemset/problem/${contestId}/${index}`
+      );
+    } catch (e) {
+      console.log(
+        `Couldn't fetch problem ${contestId}${index}, will retry: ` + e
+      );
+    }
+    while (!resp || !resp.ok) {
+      await sleep(100);
+      try {
+        resp = await this.client.get(
+          `https://codeforces.com/problemset/problem/${contestId}/${index}`
+        );
+      } catch (e) {
+        console.log(
+          `Couldn't fetch problem ${contestId}${index}, will retry: ` + e
+        );
+      }
+    }
+    try {
+      // translate Codeforces's inline and display equation delimiters to something MathJax understands
+      let texFilteredResp = resp.text.replace(
+        /\$\$\$\$\$\$(.*?)\$\$\$\$\$\$/g,
+        "\\[$1\\]"
+      );
+      texFilteredResp = texFilteredResp.replace(
+        /\$\$\$(.*?)\$\$\$/g,
+        "\\($1\\)"
+      );
+      let problemConstraints = await this.findProblemConstraints(
+        texFilteredResp,
+        contestId,
+        index
+      );
+      let problemStatement = await this.findProblemStatement(
+        texFilteredResp,
+        contestId,
+        index
+      );
+      let problemInput = await this.findProblemInput(
+        texFilteredResp,
+        contestId,
+        index
+      );
+      let problemOutput = await this.findProblemOutput(
+        texFilteredResp,
+        contestId,
+        index
+      );
+      let problemTestCases = await this.findProblemTestCases(
+        texFilteredResp,
+        contestId,
+        index
+      );
+      let problemNote = await this.findProblemNote(
+        texFilteredResp,
+        contestId,
+        index
+      );
+      if (
+        !problemConstraints ||
+        !problemStatement ||
+        !problemInput ||
+        !problemOutput ||
+        !problemTestCases
+      )
+        return false;
+      return {
+        constraints: problemConstraints,
+        statement: problemStatement,
+        input: problemInput,
+        output: problemOutput,
+        testCases: problemTestCases,
+        note: problemNote,
+      };
+    } catch (e) {
+      console.log(`Couldn't fetch problem ${contestId}${index} content: ` + e);
+    }
+  }
 }
 
 export default CodeforcesAPI;
