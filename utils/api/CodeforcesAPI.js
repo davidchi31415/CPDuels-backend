@@ -10,6 +10,7 @@ import puppeteer from "puppeteer-extra";
 import { executablePath } from "puppeteer";
 import PortalPlugin from "puppeteer-extra-plugin-portal";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
+import { submissionModel } from "../../models/models.js";
 
 puppeteer.use(StealthPlugin());
 
@@ -26,7 +27,7 @@ puppeteer.use(StealthPlugin());
 
 class CodeforcesAPI {
   constructor() {
-    this.client = superagent.agent();
+    //this.client = superagent.agent();
     this.loginInfo = new circularArray([
       ["cpduels-bot", "davidandjeffrey"],
       ["cpduels-bot2", "davidandjeffrey"],
@@ -39,148 +40,27 @@ class CodeforcesAPI {
       // ["cpduels-bot9", "davidandjeffrey"],
       // ["cpduels-bot10", "davidandjeffrey"],
     ]);
-    this.currentBrowser = false;
+
+    // Submitting
+    this.currentSubmitBrowser = false;
+    this.currentSubmitPage = false;
     this.loggedIn = false;
     this.currentSubmissionCount = 0;
     this.lastLoginTime = false;
     this.currentAccount = ""; // not logged in
+
+    // Updating
+    this.currentCheckerBrowser = false;
+    this.currentCheckerPage = false;
   }
 
   //////////////////////////////////////////////////////////////////////////
   // Submitting
 
-  async post(data) {
-    return await this.client
-      .post(data[0])
-      .send(data[1])
-      .set("Content-Type", "application/x-www-form-urlencoded");
-  }
-
-  async ensureBrowser() {
-    if (this.currentBrowser) return;
-    this.currentBrowser = await puppeteer.launch({
-      args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
-      headless: false,
-      ignoreHTTPSErrors: true,
-      executablePath: executablePath(),
-    });
-  }
-  async ensureLoggedIn() {
-    if (this.loggedIn) return;
-    await this.puppeteerLogin();
-  }
-
-  // async puppeteerLogin() {
-  // 	await this.ensureBrowser;
-  // 	if (!this.currentBrowser) return false;
-  // 	const page = await this.currentBrowser.newPage();
-  // 	await page.goto("https://codeforces.com/enter/", {
-  // 		waitUntil: "networkidle2",
-  // 	});
-  // 	const url = await page.openPortal();
-  // 	await page.waitForRequest(
-  // 		(req) => {
-  // 			if (req.method() !== "POST") return false;
-  // 			return req.url().split("?")[0].endsWith("/enter");
-  // 		},
-  // 		{ timeout: Time.day }
-  // 	);
-  // 	await page.waitForTimeout(10 * 1000);
-  // 	await this.clearPage(page);
-  // 	await this.currentBrowser?.close();
-  // 	return true;
-  // }
-
-  async logout() {
-    await this.currentBrowser.close();
-    this.currentBrowser = false;
-    this.page = false;
-    this.currentSubmissionCount = 0;
-    this.loggedIn = false;
-    this.currentAccount = "";
-  }
-
-  async switchAccounts() {
-    await this.logout();
-    await this.puppeteerLogin();
-  }
-
-  async getCsrf(url) {
-    await this.ensureBrowser();
-    if (!this.currentBrowser) return false;
-    const page = await this.currentBrowser.newPage();
-    let res = await page
-      .goto(url, {
-        waitUntil: "networkidle2",
-      })
-      .then((result) => result.text());
-    const $ = cheerio.load(res);
-    return $(".csrf-token").attr("data-csrf");
-  }
-
-  async puppeteerLogin() {
-    await this.ensureBrowser();
-    if (!this.currentBrowser) return false;
-    const page = await this.currentBrowser.newPage();
-    await page.setRequestInterception(true);
-    page.on("request", (request) => {
-      if (request.resourceType() === "image") request.abort();
-      else request.continue();
-    });
-    page.goto("https://codeforces.com/enter/", {
-      waitUntil: "networkidle2",
-    });
-    let login = this.loginInfo.getCurAndUpdate();
-    await page.waitForSelector("input[id=handleOrEmail]");
-    await page.type("input[id=handleOrEmail]", login[0]);
-    await page.waitForSelector("input[id=password]");
-    await page.type("input[id=password]", login[1]);
-    await page.waitForSelector("input[class=submit]");
-    await page.click("input[class=submit]");
-    try {
-      // Successful login
-      await page.waitForSelector(`a[href="/profile/${login[0]}"]`);
-      console.log("Login Succeeded");
-      this.lastLoginTime = Date.now();
-      this.loggedIn = true;
-      this.currentAccount = login[0];
-    } catch {
-      // Failed to login
-      console.log(
-        `Could not login with account ${login[0]}: trying with next account`
-      );
-      await this.switchAccounts();
-    }
-  }
-
-  async normalLogin() {
-    try {
-      let resp = await this.client.get("https://codeforces.com/enter/");
-      console.log(resp.status);
-      let login = this.loginInfo.getCurAndUpdate();
-      let csrf = findCsrf(resp.text);
-      let res = await this.client
-        .post("https://codeforces.com/enter/")
-        .send({
-          _tta: "176",
-          csrf_token: csrf,
-          action: "enter",
-          handleOrEmail: login[0],
-          password: login[1],
-        })
-        .set("Content-Type", "application/x-www-form-urlencoded");
-      console.log(res.status);
-      let re = /cpduels-bot/gs;
-      if (!(await res.text.match(re))) {
-        throw "Request failed. Check handleOrEmail or password";
-      }
-      console.log("Login Succeeded");
-    } catch (err) {
-      console.log("codeforces might be down");
-      console.log(`Login failed: \n ${err}`);
-    }
-  }
   toComment(programTypeId, text) {
+    if (typeof programTypeId === "string")
+      programTypeId = parseInt(programTypeId);
+    console.log(programTypeId);
     if (
       [
         43,
@@ -240,9 +120,73 @@ class CodeforcesAPI {
     }
   }
 
+  async ensureSubmitBrowser() {
+    if (this.currentSubmitBrowser) return;
+    this.currentSubmitBrowser = await puppeteer.launch({
+      args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
+      headless: false,
+      ignoreHTTPSErrors: true,
+      executablePath: executablePath(),
+    });
+  }
+  async ensureLoggedIn() {
+    if (this.loggedIn) return;
+    await this.puppeteerLogin();
+  }
+
+  async puppeteerLogin() {
+    await this.ensureSubmitBrowser();
+    if (!this.currentSubmitBrowser) return false;
+    const page = await this.currentSubmitBrowser.newPage();
+    await page.setRequestInterception(true);
+    page.on("request", (request) => {
+      if (request.resourceType() === "image") request.abort();
+      else request.continue();
+    });
+    page.goto("https://codeforces.com/enter/", {
+      waitUntil: "networkidle2",
+    });
+    let login = this.loginInfo.getCurAndUpdate();
+    await page.waitForSelector("input[id=handleOrEmail]");
+    await page.type("input[id=handleOrEmail]", login[0]);
+    await page.waitForSelector("input[id=password]");
+    await page.type("input[id=password]", login[1]);
+    await page.waitForSelector("input[class=submit]");
+    await page.click("input[class=submit]");
+    try {
+      // Successful login
+      await page.waitForSelector(`a[href="/profile/${login[0]}"]`);
+      console.log(`Logged in to account ${login[0]}.`);
+      this.lastLoginTime = Date.now();
+      this.loggedIn = true;
+      this.currentAccount = login[0];
+    } catch {
+      // Failed to login
+      console.log(
+        `Could not login with account ${login[0]}: trying with next account`
+      );
+      await this.switchAccounts();
+    }
+  }
+
+  async logout() {
+    await this.currentSubmitBrowser.close();
+    this.currentSubmitBrowser = false;
+    this.currentSubmitPage = false;
+    this.currentSubmissionCount = 0;
+    this.loggedIn = false;
+    console.log(`Logged out of account ${this.currentAccount}.`);
+    this.currentAccount = "";
+  }
+
+  async switchAccounts() {
+    console.log("Switching accounts.");
+    await this.logout();
+    await this.puppeteerLogin();
+  }
+
   checkIfLogoutNecessary() {
-    if (!this.lastLoginTime || !this.currentBrowser) return false;
-    console.log(this.currentSubmissionCount);
+    if (!this.lastLoginTime || !this.currentSubmitBrowser) return false;
     if (this.currentSubmissionCount >= 20) return true;
     return false;
   }
@@ -250,6 +194,7 @@ class CodeforcesAPI {
   async puppeteerSubmitProblem(
     contestId,
     problemIndex,
+    problemName,
     sourceCode,
     programTypeId,
     duelId,
@@ -260,69 +205,92 @@ class CodeforcesAPI {
         programTypeId,
         `${duelId}${uid}`
       )}\n${sourceCode}`;
-      console.log(sourceCode);
       await this.ensureLoggedIn();
-      if (!this.currentBrowser) {
+      if (!this.currentSubmitBrowser) {
         console.log(
-          `Submitting solution for ${contestId}${problemIndex} Failed: \n Could not open Puppeteer`
+          `Submitting solution for ${contestId}${problemIndex} Failed: \n Could not open Puppeteer for submitting.`
         );
         return [
           false,
-          `Submitting solution for ${contestId}${problemIndex} Failed: \n Could not open Puppeteer`,
+          `Submitting solution for ${contestId}${problemIndex} Failed: \n Could not open Puppeteer for submitting.`,
         ];
       }
-      if (!this.page) {
-        this.page = await this.currentBrowser.newPage();
-        await this.page.setRequestInterception(true);
-        this.page.on("request", (request) => {
+      if (!this.currentSubmitPage) {
+        this.currentSubmitPage = await this.currentSubmitBrowser.newPage();
+        await this.currentSubmitPage.setRequestInterception(true);
+        this.currentSubmitPage.on("request", (request) => {
           if (request.resourceType() === "image") request.abort();
           else request.continue();
         });
       }
-      this.page.goto(`https://codeforces.com/contest/${contestId}/submit`, {
-        waitUntil: "networkidle2",
-      });
-      await this.page.waitForSelector('select[name="submittedProblemIndex"]');
-      await this.page.select(
+      this.currentSubmitPage.goto(
+        `https://codeforces.com/contest/${contestId}/submit`,
+        {
+          waitUntil: "networkidle2",
+        }
+      );
+      await this.currentSubmitPage.waitForSelector(
+        'select[name="submittedProblemIndex"]'
+      );
+      await this.currentSubmitPage.select(
         'select[name="submittedProblemIndex"]',
         problemIndex.toUpperCase()
       );
-      await this.page.waitForSelector('select[name="programTypeId"]');
-      await this.page.select(
+      await this.currentSubmitPage.waitForSelector(
+        'select[name="programTypeId"]'
+      );
+      await this.currentSubmitPage.select(
         'select[name="programTypeId"]',
         `${programTypeId}`
       );
-      await this.page.waitForSelector('textarea[class="ace_text-input"]');
-      await this.page.type('textarea[class="ace_text-input"]', sourceCode);
-      await this.page.waitForSelector('input[value="Submit"]');
-      await this.page.click('input[value="Submit"]');
+      await this.currentSubmitPage.waitForSelector(
+        'textarea[id="sourceCodeTextarea"]'
+      );
+      await this.currentSubmitPage.evaluate((sourceCode) => {
+        return (document.querySelector(
+          'textArea[id="sourceCodeTextarea"]'
+        ).innerHTML = sourceCode);
+      }, sourceCode);
+      await this.currentSubmitPage.waitForSelector('input[value="Submit"]');
+      await this.currentSubmitPage.click('input[value="Submit"]');
       this.currentSubmissionCount++;
       try {
         // Solution successfully submitted
-        await this.page.waitForSelector("tr.highlighted-row");
-        const submissionId = await this.page.evaluate(() =>
-          document
-            .querySelector("tr.highlighted-row")
-            .getAttribute("data-submission-id")
+        await this.currentSubmitPage.waitForSelector('a[title="Source"]');
+        const submissionId = await this.currentSubmitPage.evaluate(
+          () => document.querySelector('a[title="Source"]').innerHTML
         );
-        console.log(submissionId);
+        console.log(`CF Submission Id retrieved: ${submissionId}`);
+        await submissionModel.create({
+          platform: "CF",
+          problemName: problemName,
+          url: `https://www.codeforces.com/contest/${contestId}/submission/${submissionId}`,
+          duelId: duelId,
+          uid: uid,
+          submissionId: submissionId,
+          status: "PENDING",
+        });
       } catch (e) {
         // Solution failed to submit
         console.log(
-          `Submitting solution failed with account ${this.currentAccount}: switching accounts and resubmitting`
+          `Submitting solution failed with account ${this.currentAccount}: \n ${e} \n Switching accounts and resubmitting`
         );
         await this.switchAccounts();
         await this.puppeteerSubmitProblem(
           contestId,
           problemIndex,
+          problemName,
           sourceCode,
           programTypeId,
           duelId,
           uid
         );
+        return;
       }
+      console.log(
+        `Solution for ${contestId}${problemIndex} submitted successfully.`
+      );
       if (this.checkIfLogoutNecessary()) await this.switchAccounts();
-      console.log("Submitted successfully.");
       return [true];
     } catch (err) {
       console.log(
@@ -332,61 +300,6 @@ class CodeforcesAPI {
         false,
         `Submitting solution for ${contestId}${problemIndex} Failed: \n ${err}`,
       ];
-    }
-  }
-
-  async submitProblem(
-    contestId,
-    problemIndex,
-    sourceCode,
-    programTypeId,
-    duelId,
-    uid
-  ) {
-    try {
-      sourceCode = `${this.toComment(
-        programTypeId,
-        `${duelId}${uid}`
-      )}\n${sourceCode}`;
-      console.log(sourceCode);
-      let csrf = await this.getCsrf(
-        `https://codeforces.com/contest/${contestId}/submit`
-      );
-      let submitUrl = `https://codeforces.com/contest/${contestId}/submit?csrf_token=${csrf}`;
-      let res = await this.post([
-        submitUrl,
-        {
-          csrf_token: csrf,
-          action: "submitSolutionFormSubmitted",
-          submittedProblemIndex: problemIndex,
-          programTypeId: programTypeId,
-          contestId: contestId,
-          source: sourceCode,
-          tabSize: "4",
-          _tta: "594",
-          sourceCodeConfirmed: "true",
-        },
-      ]);
-
-      const $ = cheerio.load(res.text);
-      const error = $('span[class="error for__source"]').text();
-      if (error !== "") throw error;
-      else {
-        let timeSubmitted = new Date().toLocaleString() + " CT";
-        await db.collection("submissions").insertOne({
-          platform: "CF",
-          timeSubmitted: timeSubmitted,
-          duelId: duelId,
-          uid: uid,
-          status: "PENDING",
-        });
-
-        console.log(`Submitted solution for ${contestId}${problemIndex}`);
-      }
-    } catch (err) {
-      console.log(
-        `Submitting solution for ${contestId}${problemIndex} Failed: \n ${err}`
-      );
     }
   }
 
@@ -423,6 +336,136 @@ class CodeforcesAPI {
     }
   }
 
+  async ensureCheckerBrowser() {
+    if (this.currentCheckerBrowser) return;
+    this.currentCheckerBrowser = await puppeteer.launch({
+      args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
+      headless: false,
+      ignoreHTTPSErrors: true,
+      executablePath: executablePath(),
+    });
+  }
+
+  async updateSubmissionVerdict(rawVerdict, submissionId) {
+    const verdict = rawVerdict.toUpperCase();
+    if (verdict.includes("WRONG ANSWER")) {
+      await submissionModel.findOneAndUpdate(
+        {
+          submissionId: submissionId,
+        },
+        {
+          $set: {
+            status: "WRONG ANSWER",
+          },
+        }
+      );
+    } else if (verdict.includes("COMPILATION ERROR")) {
+      await submissionModel.findOneAndUpdate(
+        {
+          submissionId: submissionId,
+        },
+        {
+          $set: {
+            status: "COMPILATION ERROR",
+          },
+        }
+      );
+    } else if (verdict.includes("RUNTIME ERROR")) {
+      await submissionModel.findOneAndUpdate(
+        {
+          submissionId: submissionId,
+        },
+        {
+          $set: {
+            status: "RUNTIME ERROR",
+          },
+        }
+      );
+    } else if (verdict.includes("TIME LIMIT EXCEEDED")) {
+      await submissionModel.findOneAndUpdate(
+        {
+          submissionId: submissionId,
+        },
+        {
+          $set: {
+            status: "TIME LIMIT EXCEEDED",
+          },
+        }
+      );
+    } else if (verdict.includes("MEMORY LIMIT EXCEEDED")) {
+      await submissionModel.findOneAndUpdate(
+        {
+          submissionId: submissionId,
+        },
+        {
+          $set: {
+            status: "MEMORY LIMIT EXCEEDED",
+          },
+        }
+      );
+    } else if (verdict.includes("IDLENESS LIMIT EXCEEDED")) {
+      await submissionModel.findOneAndUpdate(
+        {
+          submissionId: submissionId,
+        },
+        {
+          $set: {
+            status: "IDLENESS LIMIT EXCEEDED",
+          },
+        }
+      );
+    } else if (verdict.includes("ACCEPTED")) {
+      await submissionModel.findOneAndUpdate(
+        {
+          submissionId: submissionId,
+        },
+        {
+          $set: {
+            status: "ACCEPTED",
+          },
+        }
+      );
+    } else {
+      console.log("Submission not updated: still pending.");
+    }
+  }
+
+  async updateSubmission(submission) {
+    await this.ensureCheckerBrowser();
+    if (!this.currentCheckerBrowser) {
+      console.log("Could not open Puppeteer for checking.");
+      return [false, "Could not open Puppeteer for checking."];
+    }
+    if (!this.currentCheckerPage) {
+      this.currentCheckerPage = await this.currentCheckerBrowser.newPage();
+      await this.currentCheckerPage.setRequestInterception(true);
+      this.currentCheckerPage.on("request", (request) => {
+        if (request.resourceType() === "image") request.abort();
+        else request.continue();
+      });
+    }
+    try {
+      console.log(submission.url);
+      await this.currentCheckerPage.goto(submission.url, {
+        waitUntil: "domcontentloaded",
+      });
+      await this.currentCheckerPage.waitForSelector("td.bottom");
+      let verdict = await this.currentCheckerPage.evaluate(
+        () => document.querySelector("table td:nth-of-type(5)")?.innerHTML
+      );
+      if (!verdict) {
+        console.log(
+          `Could not update submission ${submission.submissionId}: \n Verdict not found.`
+        );
+      }
+      await this.updateSubmissionVerdict(verdict, submission.submissionId);
+    } catch (err) {
+      console.log(
+        `Could not update submission ${submission.submissionId}: \n ${err}`
+      );
+    }
+  }
+
   async getPendingSubmissionsFromDatabase() {
     let result = await db
       .collection("submissions")
@@ -440,97 +483,12 @@ class CodeforcesAPI {
   async updateSubmissions() {
     let dbSubmissions = await this.getPendingSubmissionsFromDatabase();
     if (!dbSubmissions.length) {
-      console.log("there are no sumissions to update :)");
+      console.log("There are no CF sumissions to update.");
       return;
     }
-    let submissions = await this.getUserSubmissions("cpduels-bot");
-    let submissionCounter = dbSubmissions.length;
-    for (let i = 0; i < submissions.length; i++) {
-      if (submissionCounter === 0) break; // If there are no PENDING submissions, don't check
-      let submission = submissions[i];
-      let duelId, uid;
-      let info = await this.getSubmissionUserInfo(submission);
-      console.log("Found info");
-      console.log(info);
-      let verdict = submission.verdict ? submission.verdict : "PENDING";
-      if (verdict === "TESTING") continue;
-      if (info) {
-        ({ duelId, uid } = info);
-        let findSubmission = await db
-          .collection("submissions")
-          .find(
-            {
-              duelId: ObjectId(duelId),
-              uid: uid,
-            },
-            {}
-          )
-          .toArray();
-        console.log(findSubmission);
-        if (findSubmission.length != 0) {
-          console.log("Found summission in database");
-          // update submission
-          if (findSubmission[0].status !== "PENDING") continue; // Only update if it is a pending submission
-          await db.collection("submissions").findOneAndUpdate(
-            {
-              duelId: ObjectId(duelId),
-              uid: uid,
-            },
-            {
-              $set: {
-                status: verdict,
-                submissionId: submission.id,
-              },
-            }
-          );
-          submissionCounter--; // Mark off the submission (from pending submissions we were looking for)
-          console.log(
-            `Updated player ${uid}'s submission with id ${submission.id} in duel ${duelId} to ${submission.verdict}`
-          );
-        } else {
-          console.log(`No player/duel info on submission ${submission.id}`);
-        }
-      } else {
-        console.log(`Submission ${submission.id} has invalid info ${info}`);
-      }
+    for (let i = 0; i < dbSubmissions.length; i++) {
+      await this.updateSubmission(dbSubmissions[i]);
     }
-  }
-
-  async getSubmissionUserInfo(submission) {
-    let source = await this.getSubmissionSource(
-      submission.contestId,
-      submission.id
-    );
-    try {
-      return await this.getSubmissionInfoFromSource(source);
-    } catch {
-      return 0;
-    }
-  }
-
-  async getSubmissionSource(contestId, id) {
-    let url = `https://codeforces.com/contest/${contestId}/submission/${id}`;
-    let res;
-    while (!res || res.status != 200) {
-      try {
-        res = await this.client.get(url);
-      } catch {}
-    }
-
-    const $ = cheerio.load(res.text);
-    return $('pre[id="program-source-text"]').text();
-  }
-
-  getSubmissionInfoFromSource(text) {
-    let comment = text.split(/\r?\n|\r|\n/g)[0];
-    let totalResult = comment.match(/[a-z0-9-]*/gs).filter((e) => {
-      return e !== "";
-    })[0];
-    console.log(totalResult);
-    return {
-      duelId: totalResult.slice(0, 24),
-      uid: totalResult.slice(24),
-    };
   }
 
   ///////////////////////////////////////////////////////////////////////////////
@@ -664,8 +622,12 @@ class CodeforcesAPI {
     let ratedProblems = await this.getProblems({
       rating: { $gte: ratingMin, $lte: ratingMax },
     });
-    let submissions1 = await this.getUserSubmissions(usernames[0]);
-    let submissions2 = await this.getUserSubmissions(usernames[1]);
+    let submissions1 = [];
+    if (usernames[0] !== "!GUEST!")
+      submissions1 = await this.getUserSubmissions(usernames[0]);
+    let submissions2 = [];
+    if (usernames[1] !== "!GUEST!")
+      submissions2 = await this.getUserSubmissions(usernames[1]);
     let combined_submissions = submissions1.concat(
       submissions2.filter((item) => submissions1.indexOf(item) < 0)
     );

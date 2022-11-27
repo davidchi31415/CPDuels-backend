@@ -1,5 +1,6 @@
 import db from "../server.js";
 import { ObjectId } from "mongodb";
+import duelModel from "../models/models.js";
 // import languages from "./languages.js";
 
 class DuelManager {
@@ -58,14 +59,14 @@ class DuelManager {
     return [true];
   }
 
-  async isValidJoinRequest(duelId, username) {
+  async isValidJoinRequest(duelId, username, guest) {
     let duel = await this.getDuel(duelId);
 
     if (duel.players.length === 2) {
       // username multiple players joining at once
       return [false, "Duel Full"];
     }
-    if (username === "!GUEST!") return [true]; // Skip the username checking if it is a guest join request
+    if (guest) return [true]; // Skip the username checking if it is a guest join request
     let owner = duel.players[0];
     if (owner.username === username) {
       return [false, "Duplicate Usernames"];
@@ -107,7 +108,7 @@ class DuelManager {
 
   async changeDuelState(id, state) {
     console.log("Duel " + id + " State Changed to " + state);
-    await db.collection("duels").findOneAndUpdate(
+    await duelModel.findOneAndUpdate(
       {
         _id: ObjectId(id),
       },
@@ -122,7 +123,7 @@ class DuelManager {
   async startDuel(id) {
     await this.changeDuelState(id, "ONGOING");
     var startTime = new Date().getTime() / 1000;
-    await db.collection("duels").findOneAndUpdate(
+    await duelModel.findOneAndUpdate(
       {
         _id: ObjectId(id),
       },
@@ -137,7 +138,7 @@ class DuelManager {
 
   async abortDuel(id) {
     await this.changeDuelState(id, "ABORTED");
-    await db.collection("duels").findOneAndUpdate(
+    await duelModel.findOneAndUpdate(
       {
         _id: ObjectId(id),
       },
@@ -154,7 +155,7 @@ class DuelManager {
     let duel = await this.getDuel(id);
     let winner = duel.players[0].username;
     if (uid === duel.players[1].uid) winner = duel.players[1].uersname;
-    await db.collection("duels").findOneAndUpdate(
+    await duelModel.findOneAndUpdate(
       {
         _id: ObjectId(id),
       },
@@ -170,7 +171,7 @@ class DuelManager {
     await this.changeDuelState(id, "FINISHED");
     await this.checkProblemSolves(id);
     let winner = await this.findWinner(id);
-    await db.collection("duels").findOneAndUpdate(
+    await duelModel.findOneAndUpdate(
       {
         _id: ObjectId(id),
       },
@@ -182,8 +183,16 @@ class DuelManager {
     );
   }
 
-  async addDuelPlayer(id, username, uid) {
-    await db.collection("duels").findOneAndUpdate(
+  async addDuelPlayer(id, username, guest, uid) {
+    let renamePlayerOne = false;
+    if (guest) {
+      let duel = await this.getDuel(id);
+      if (duel.players[0].guest) {
+        renamePlayerOne = true;
+        username = "GUEST2";
+      } else username = "GUEST";
+    }
+    await duelModel.findOneAndUpdate(
       {
         _id: ObjectId(id),
       },
@@ -192,29 +201,33 @@ class DuelManager {
           players: {
             username: username,
             uid: uid,
+            score: 0,
+            guest: guest,
+            solveCount: 0,
+            attemptCount: 0,
           },
         },
       }
     );
+    if (renamePlayerOne)
+      await duelModel.findOneAndUpdate(
+        {
+          _id: ObjectId(id),
+        },
+        {
+          $set: {
+            "players.0.username": "GUEST1",
+          },
+        }
+      );
   }
 
   async addProblems(id) {
     let duel = await this.getDuel(id);
     let problems = await this.taskManager.createDuelProblems(duel);
+    console.log(problems);
 
-    /* Points
-        Each problem's points is equal to the amount of rating above the rating range minimum, plus 100
-        If the rating range delta is 0, each problem is worth 100 points
-        */
-    for (let i = 0; i < problems.length; i++) {
-      problems[i].points = problems[i].rating - duel.ratingMin + 100;
-      problems[i].playerOneScore = 0;
-      problems[i].playerTwoScore = 0;
-      problems[i].playerOneAttempts = 0;
-      problems[i].playerTwoAttempts = 0;
-    }
-
-    await db.collection("duels").findOneAndUpdate(
+    await duelModel.findOneAndUpdate(
       {
         _id: ObjectId(id),
       },
@@ -306,7 +319,7 @@ class DuelManager {
       }
     }
 
-    await db.collection("duels").findOneAndUpdate(
+    await duelModel.findOneAndUpdate(
       {
         _id: ObjectId(id),
       },
@@ -330,7 +343,7 @@ class DuelManager {
       if (duel.problems[i].playerOneScore) playerOneSolves++;
       if (duel.problems[i].playerTwoScore) playerTwoSolves++;
     }
-    await db.collection("duels").findOneAndUpdate(
+    await duelModel.findOneAndUpdate(
       {
         _id: ObjectId(id),
       },
@@ -376,11 +389,23 @@ class DuelManager {
     }
   }
 
-  async submitProblem(duel, uid, submission) {
+  async submitProblem(id, uid, submission) {
     console.log("trying to submit problem");
     try {
       // await this.taskManager.submitProblem(duel, uid, submission);
-      await this.taskManager.taskSubmit(duel, uid, submission);
+      // await this.taskManager.taskSubmit(duel, uid, submission);
+      let duel = await this.getDuel(id);
+      console.log(submission);
+      let problem = duel.problems[parseInt(submission.number) - 1];
+      await this.codeforcesAPI.puppeteerSubmitProblem(
+        problem.contestId,
+        problem.index,
+        problem.name,
+        submission.content,
+        submission.languageCode,
+        id,
+        uid
+      );
       return [true];
     } catch (e) {
       console.log(

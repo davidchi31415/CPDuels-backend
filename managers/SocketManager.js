@@ -7,22 +7,26 @@ class SocketManager {
     const codeforcesAPI = new CodeforcesAPI();
     const taskManager = new TaskManager(codeforcesAPI);
     const duelManager = new DuelManager(codeforcesAPI, taskManager);
-    taskManager.init();
+    // taskManager.init();
+    setInterval(async () => {
+      await codeforcesAPI.updateSubmissions();
+    }, 10000);
     this.io = io;
     io.on("connection", async (socket) => {
       socket.on("join", (roomId) => {
         socket.join(roomId);
       });
-      socket.on("join-duel", async ({ roomId, username, uid }) => {
+      socket.on("join-duel", async ({ roomId, username, guest, uid }) => {
         let duelState = await duelManager.getDuelState(roomId);
         if (duelState === "WAITING") {
           console.log(username + " Wants to Join Duel " + roomId);
           let validJoin = await duelManager.isValidJoinRequest(
             roomId,
-            username
+            username,
+            guest
           );
           if (validJoin[0]) {
-            await duelManager.addDuelPlayer(roomId, username, uid);
+            await duelManager.addDuelPlayer(roomId, username, guest, uid);
             await duelManager.changeDuelState(roomId, "READY");
             io.emit("status-change", {
               roomId: roomId,
@@ -101,7 +105,7 @@ class SocketManager {
             if (duel.players[i].uid === uid) valid = true;
           }
           if (valid) {
-            await duelManager.submitProblem(duel, uid, submission);
+            await duelManager.submitProblem(roomId, uid, submission);
             io.emit("problem-submitted-success", {
               roomId: roomId,
               uid: uid,
@@ -173,10 +177,6 @@ class SocketManager {
         }
       });
       socket.on("message-send", async ({ roomId, uid, message }) => {
-        console.log(
-          `Duel ${roomId}, player with uid ${uid} is sending a message.`
-        );
-
         try {
           let valid = false;
           let duel = await duelManager.getDuel(roomId);
@@ -203,15 +203,11 @@ class SocketManager {
         }
       });
       socket.on("message-typing-send", async ({ roomId, uid, author }) => {
-        console.log(
-          `Duel ${roomId}, player with uid ${uid} is typing a message.`
-        );
-
         try {
           io.emit("message-typing-receive", {
             roomId: roomId,
             senderUid: uid,
-            author: author
+            author: author,
           });
         } catch (e) {
           console.log(`Error typing a message in Duel ${roomId}: ${e}`);
