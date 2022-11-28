@@ -15,22 +15,22 @@ import messagesRouter from "./routes/messagesRouter.js";
 
 const app = express();
 var corsOptions = {
-  origin: allowedOrigins,
-  optionsSuccessStatus: 200,
+	origin: allowedOrigins,
+	optionsSuccessStatus: 200,
 };
 
 app.use(cors(corsOptions));
 const PORT = process.env.PORT || 8080;
 const DATABASE_URL =
-  process.env.DATABASE_URL ||
-  "mongodb+srv://CPDuels:wrongfulphrasenimblemonumentshindigcardstockvastlyappraisalcloaktremor@cpduels.s78kdcw.mongodb.net/?retryWrites=true&w=majority";
+	process.env.DATABASE_URL ||
+	"mongodb+srv://CPDuels:wrongfulphrasenimblemonumentshindigcardstockvastlyappraisalcloaktremor@cpduels.s78kdcw.mongodb.net/?retryWrites=true&w=majority";
 
 mongoose.connect(DATABASE_URL);
 const db = mongoose.connection;
 db.on("error", (err) => console.log(err));
 db.once("open", async () => console.log("Connected to database."));
 while (mongoose.connection.readyState != 1) {
-  await sleep(1000);
+	await sleep(1000);
 }
 
 app.use(express.json());
@@ -40,13 +40,13 @@ app.use("/cfproblems", cfproblemsRouter);
 app.use("/submissions", submissionsRouter);
 app.use("/messages", messagesRouter);
 const server = app.listen(PORT, () =>
-  console.log(`Server is started on port ${PORT}.`)
+	console.log(`Server is started on port ${PORT}.`)
 );
 const io = new Server(
-  server,
-  cors({
-    origin: allowedOrigins,
-  })
+	server,
+	cors({
+		origin: allowedOrigins,
+	})
 );
 
 export default db;
@@ -56,15 +56,19 @@ await socketManager.init();
 
 // const api = new CodeforcesAPI();
 // setInterval(async () => {
-//   await api.updateSubmissions();
+// 	await api.updateSubmissions();
 // }, 10000);
-// for (let i = 0; i < 20; i++) {
-//   await api.puppeteerSubmitProblem(
-//     1729,
-//     "f",
-//     `Random code: ${Date.now()}`,
-//     73,
-//     "123",
-//     "321"
-//   );
+// let i = 0;
+// while (true) {
+// 	console.log(`attempt ${i}`);
+// 	await api.puppeteerSubmitProblem(
+// 		1729,
+// 		"f",
+// 		"Bullshit name",
+// 		`Random code: ${Date.now()}`,
+// 		73,
+// 		"123",
+// 		"321"
+// 	);
+// 	i++;
 // }
