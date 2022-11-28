@@ -4,12 +4,12 @@ import CodeforcesAPI from "../utils/api/CodeforcesAPI.js";
 
 class SocketManager {
   constructor(io) {
-    const codeforcesAPI = new CodeforcesAPI();
-    const taskManager = new TaskManager(codeforcesAPI);
-    const duelManager = new DuelManager(codeforcesAPI, taskManager);
+    this.codeforcesAPI = new CodeforcesAPI();
+    const taskManager = new TaskManager(this.codeforcesAPI);
+    const duelManager = new DuelManager(this.codeforcesAPI, taskManager);
     // taskManager.init();
     setInterval(async () => {
-      let checkedCF = await codeforcesAPI.updateSubmissions(); // set
+      let checkedCF = await this.codeforcesAPI.updateSubmissions(); // set
       if (checkedCF) {
         for (const item of checkedCF) {
           io.emit("submission-change", { uid: item });
@@ -100,8 +100,6 @@ class SocketManager {
         console.log(
           `Duel ${roomId}, player with uid ${uid} is submitting a problem.`
         );
-
-        console.log(submission.languageCode);
         try {
           console.log(roomId);
           let duel = await duelManager.getDuel(roomId);
@@ -110,11 +108,22 @@ class SocketManager {
             if (duel.players[i].uid === uid) valid = true;
           }
           if (valid) {
-            await duelManager.submitProblem(roomId, uid, submission);
-            io.emit("problem-submitted-success", {
-              roomId: roomId,
-              uid: uid,
-            });
+            let submitted = await duelManager.submitProblem(
+              roomId,
+              uid,
+              submission
+            );
+            if (submitted[0])
+              io.emit("problem-submitted-success", {
+                roomId: roomId,
+                uid: uid,
+              });
+            else
+              io.emit("problem-submitted-success", {
+                roomId: roomId,
+                uid: uid,
+                message: "Could not submit. Please retry."
+              });
           } else {
             console.log(`Not a valid uid for submission to Duel ${roomId}`);
             io.emit("problem-submitted-error", {
@@ -219,6 +228,10 @@ class SocketManager {
         }
       });
     });
+  }
+
+  async init() {
+    await this.codeforcesAPI.init();
   }
 
   async getTimeLeft(

@@ -54,6 +54,11 @@ class CodeforcesAPI {
     this.currentCheckerPage = false;
   }
 
+  async init() {
+    await this.puppeteerLogin();
+    await this.ensureCheckerBrowser();
+  }
+
   //////////////////////////////////////////////////////////////////////////
   // Submitting
 
@@ -138,6 +143,7 @@ class CodeforcesAPI {
     await this.ensureSubmitBrowser();
     if (!this.currentSubmitBrowser) return false;
     const page = await this.currentSubmitBrowser.newPage();
+    page.setDefaultTimeout(8000); // 8 second timeout
     await page.setRequestInterception(true);
     page.on("request", (request) => {
       if (request.resourceType() === "image") request.abort();
@@ -200,107 +206,80 @@ class CodeforcesAPI {
     duelId,
     uid
   ) {
-    try {
-      sourceCode = `${this.toComment(
-        programTypeId,
-        `${Date.now()}`
-      )}\n${sourceCode}`;
-      await this.ensureLoggedIn();
-      if (!this.currentSubmitBrowser) {
-        console.log(
-          `Submitting solution for ${contestId}${problemIndex} Failed: \n Could not open Puppeteer for submitting.`
-        );
-        return [
-          false,
-          `Submitting solution for ${contestId}${problemIndex} Failed: \n Could not open Puppeteer for submitting.`,
-        ];
-      }
-      if (!this.currentSubmitPage) {
-        this.currentSubmitPage = await this.currentSubmitBrowser.newPage();
-        await this.currentSubmitPage.setRequestInterception(true);
-        this.currentSubmitPage.on("request", (request) => {
-          if (request.resourceType() === "image") request.abort();
-          else request.continue();
-        });
-      }
-      this.currentSubmitPage.goto(
-        `https://codeforces.com/contest/${contestId}/submit`,
-        {
-          waitUntil: "networkidle2",
-        }
-      );
-      await this.currentSubmitPage.waitForSelector(
-        'select[name="submittedProblemIndex"]'
-      );
-      await this.currentSubmitPage.select(
-        'select[name="submittedProblemIndex"]',
-        problemIndex.toUpperCase()
-      );
-      await this.currentSubmitPage.waitForSelector(
-        'select[name="programTypeId"]'
-      );
-      await this.currentSubmitPage.select(
-        'select[name="programTypeId"]',
-        `${programTypeId}`
-      );
-      await this.currentSubmitPage.waitForSelector(
-        'textarea[id="sourceCodeTextarea"]'
-      );
-      await this.currentSubmitPage.evaluate((sourceCode) => {
-        return (document.querySelector(
-          'textArea[id="sourceCodeTextarea"]'
-        ).innerHTML = sourceCode);
-      }, sourceCode);
-      await this.currentSubmitPage.waitForSelector('input[value="Submit"]');
-      await this.currentSubmitPage.click('input[value="Submit"]');
-      this.currentSubmissionCount++;
-      try {
-        // Solution successfully submitted
-        await this.currentSubmitPage.waitForSelector('a[title="Source"]');
-        const submissionId = await this.currentSubmitPage.evaluate(
-          () => document.querySelector('a[title="Source"]').innerHTML
-        );
-        console.log(`CF Submission Id retrieved: ${submissionId}`);
-        await submissionModel.create({
-          platform: "CF",
-          problemName: problemName,
-          url: `https://www.codeforces.com/contest/${contestId}/submission/${submissionId}`,
-          duelId: duelId,
-          uid: uid,
-          submissionId: submissionId,
-          status: "PENDING",
-        });
-      } catch (e) {
-        // Solution failed to submit
-        console.log(
-          `Submitting solution failed with account ${this.currentAccount}: \n ${e} \n Switching accounts and resubmitting`
-        );
-        await this.switchAccounts();
-        await this.puppeteerSubmitProblem(
-          contestId,
-          problemIndex,
-          problemName,
-          sourceCode,
-          programTypeId,
-          duelId,
-          uid
-        );
-        return;
-      }
+    sourceCode = `${this.toComment(
+      programTypeId,
+      `${Date.now()}`
+    )}\n${sourceCode}`;
+    await this.ensureLoggedIn();
+    if (!this.currentSubmitBrowser) {
       console.log(
-        `Solution for ${contestId}${problemIndex} submitted successfully.`
-      );
-      if (this.checkIfLogoutNecessary()) await this.switchAccounts();
-      return [true];
-    } catch (err) {
-      console.log(
-        `Submitting solution for ${contestId}${problemIndex} Failed: \n ${err}`
+        `Submitting solution for ${contestId}${problemIndex} Failed: \n Could not open Puppeteer for submitting.`
       );
       return [
         false,
-        `Submitting solution for ${contestId}${problemIndex} Failed: \n ${err}`,
+        `Submitting solution for ${contestId}${problemIndex} Failed: \n Could not open Puppeteer for submitting.`,
       ];
     }
+    if (!this.currentSubmitPage) {
+      this.currentSubmitPage = await this.currentSubmitBrowser.newPage();
+      this.currentSubmitPage.setDefaultTimeout(8000); // 8 second timeout
+      await this.currentSubmitPage.setRequestInterception(true);
+      this.currentSubmitPage.on("request", (request) => {
+        if (request.resourceType() === "image") request.abort();
+        else request.continue();
+      });
+    }
+    this.currentSubmitPage.goto(
+      `https://codeforces.com/contest/${contestId}/submit`,
+      {
+        waitUntil: "networkidle2",
+      }
+    );
+    await this.currentSubmitPage.waitForSelector(
+      'select[name="submittedProblemIndex"]'
+    );
+    await this.currentSubmitPage.select(
+      'select[name="submittedProblemIndex"]',
+      problemIndex.toUpperCase()
+    );
+    await this.currentSubmitPage.waitForSelector(
+      'select[name="programTypeId"]'
+    );
+    await this.currentSubmitPage.select(
+      'select[name="programTypeId"]',
+      `${programTypeId}`
+    );
+    await this.currentSubmitPage.waitForSelector(
+      'textarea[id="sourceCodeTextarea"]'
+    );
+    await this.currentSubmitPage.evaluate((sourceCode) => {
+      return (document.querySelector(
+        'textArea[id="sourceCodeTextarea"]'
+      ).innerHTML = sourceCode);
+    }, sourceCode);
+    await this.currentSubmitPage.waitForSelector('input[value="Submit"]');
+    await this.currentSubmitPage.click('input[value="Submit"]');
+    this.currentSubmissionCount++;
+    // Solution successfully submitted
+    await this.currentSubmitPage.waitForSelector('a[title="Source"]');
+    const submissionId = await this.currentSubmitPage.evaluate(
+      () => document.querySelector('a[title="Source"]').innerHTML
+    );
+    console.log(`CF Submission Id retrieved: ${submissionId}`);
+    await submissionModel.create({
+      platform: "CF",
+      problemName: problemName,
+      url: `https://www.codeforces.com/contest/${contestId}/submission/${submissionId}`,
+      duelId: duelId,
+      uid: uid,
+      submissionId: submissionId,
+      status: "PENDING",
+    });
+    console.log(
+      `Solution for ${contestId}${problemIndex} submitted successfully.`
+    );
+    if (this.checkIfLogoutNecessary()) await this.switchAccounts();
+    return [true];
   }
 
   /////////////////////////////////////////////////////////////////////////////////
@@ -448,6 +427,7 @@ class CodeforcesAPI {
     }
     if (!this.currentCheckerPage) {
       this.currentCheckerPage = await this.currentCheckerBrowser.newPage();
+      this.currentCheckerPage.setDefaultTimeout(8000); // 8 second timeout
       await this.currentCheckerPage.setRequestInterception(true);
       this.currentCheckerPage.on("request", (request) => {
         if (request.resourceType() === "image") request.abort();
@@ -521,10 +501,10 @@ class CodeforcesAPI {
     return [true, response.result[0]];
   }
 
-  async checkDuelParams(username, ratingMin, ratingMax) {
+  static async checkDuelParams(username, guest, ratingMin, ratingMax) {
     // For validating duel creation request
     let validUsername;
-    if (username === "!GUEST!") validUsername = true;
+    if (guest) validUsername = true;
     else validUsername = await this.checkUsername(username);
     if (!validUsername) {
       return [false, "Inavlid CF Username"];

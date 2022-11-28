@@ -1,6 +1,7 @@
 import db from "../server.js";
 import { ObjectId } from "mongodb";
 import duelModel from "../models/models.js";
+import CodeforcesAPI from '../utils/api/CodeforcesAPI.js';
 // import languages from "./languages.js";
 
 class DuelManager {
@@ -42,12 +43,12 @@ class DuelManager {
     }
     let validParams;
     if (platform === "CF") {
-      validParams = [true, "asdf"];
-      // validParams = await CodeforcesAPI.checkDuelParams(
-      // 	players[0].username,
-      // 	ratingMin,
-      // 	ratingMax
-      // );
+      validParams = await CodeforcesAPI.checkDuelParams(
+         	players[0].username,
+          players[0].guest,
+        	ratingMin,
+      	  ratingMax
+      );
     } else if (platform === "AT") {
       // validParams = await AtcoderAPI.checkDuelParams(players[0].username, ratingMin, ratingMax);
     } else if (platform === "LC") {
@@ -395,9 +396,8 @@ class DuelManager {
       // await this.taskManager.submitProblem(duel, uid, submission);
       // await this.taskManager.taskSubmit(duel, uid, submission);
       let duel = await this.getDuel(id);
-      console.log(submission);
       let problem = duel.problems[parseInt(submission.number) - 1];
-      await this.codeforcesAPI.puppeteerSubmitProblem(
+      let submitted = await this.codeforcesAPI.puppeteerSubmitProblem(
         problem.contestId,
         problem.index,
         problem.name,
@@ -406,7 +406,7 @@ class DuelManager {
         id,
         uid
       );
-      return [true];
+      return submitted[0];
     } catch (e) {
       console.log(
         `Duel ${id} player with uid ${uid} failed to submit problem: ${e}`
