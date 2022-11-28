@@ -201,13 +201,14 @@ class CodeforcesAPI {
 		contestId,
 		problemIndex,
 		problemName,
+		problemNumber,
 		sourceCode,
 		programTypeId,
 		duelId,
 		uid
 	) {
 		try {
-			sourceCode = `${this.toComment(
+			let commentedsourceCode = `${this.toComment(
 				programTypeId,
 				`${Date.now()}`
 			)}\n${sourceCode}`;
@@ -222,8 +223,9 @@ class CodeforcesAPI {
 				];
 			}
 			if (!this.currentSubmitPage) {
-				this.currentSubmitPage = await this.currentSubmitBrowser.newPage();
-        await this.currentSubmitPage.setDefaultTimeout(8000);
+				this.currentSubmitPage =
+					await this.currentSubmitBrowser.newPage();
+				await this.currentSubmitPage.setDefaultTimeout(8000);
 				await this.currentSubmitPage.setRequestInterception(true);
 				this.currentSubmitPage.on("request", (request) => {
 					if (request.resourceType() === "image") request.abort();
@@ -253,28 +255,35 @@ class CodeforcesAPI {
 			await this.currentSubmitPage.waitForSelector(
 				'textarea[id="sourceCodeTextarea"]'
 			);
-			await this.currentSubmitPage.evaluate((sourceCode) => {
-				return (document.querySelector(
+			await this.currentSubmitPage.evaluate((commentedsourceCode) => {
+				document.querySelector(
 					'textArea[id="sourceCodeTextarea"]'
-				).innerHTML = sourceCode);
-			}, sourceCode);
+				).innerHTML = commentedsourceCode;
+			}, commentedsourceCode);
 			await this.currentSubmitPage.waitForSelector(
 				'input[value="Submit"]'
 			);
+			await this.currentSubmitPage.evaluate(() => {
+				document
+					.querySelector('input[value="Submit"]')
+					.removeAttribute("disabled");
+			});
 			await this.currentSubmitPage.click('input[value="Submit"]');
 			this.currentSubmissionCount++;
+			let submissionId;
 			try {
 				// Solution successfully submitted
 				await this.currentSubmitPage.waitForSelector(
 					'a[title="Source"]'
 				);
-				const submissionId = await this.currentSubmitPage.evaluate(
+				submissionId = await this.currentSubmitPage.evaluate(
 					() => document.querySelector('a[title="Source"]').innerHTML
 				);
 				console.log(`CF Submission Id retrieved: ${submissionId}`);
 				await submissionModel.create({
 					platform: "CF",
 					problemName: problemName,
+					problemNumber: problemNumber,
 					url: `https://www.codeforces.com/contest/${contestId}/submission/${submissionId}`,
 					duelId: duelId,
 					uid: uid,
@@ -287,22 +296,22 @@ class CodeforcesAPI {
 					`Submitting solution failed with account ${this.currentAccount}: \n ${e} \n Switching accounts and resubmitting`
 				);
 				await this.switchAccounts();
-				await this.puppeteerSubmitProblem(
+				return await this.puppeteerSubmitProblem(
 					contestId,
 					problemIndex,
 					problemName,
+					problemNumber,
 					sourceCode,
 					programTypeId,
 					duelId,
 					uid
 				);
-				return;
 			}
 			console.log(
 				`Solution for ${contestId}${problemIndex} submitted successfully.`
 			);
 			if (this.checkIfLogoutNecessary()) await this.switchAccounts();
-			return [true];
+			return [true, submissionId];
 		} catch (err) {
 			console.log(
 				`Submitting solution for ${contestId}${problemIndex} Failed: \n ${err}`
@@ -516,11 +525,14 @@ class CodeforcesAPI {
 		for (let i = 0; i < dbSubmissions.length; i++) {
 			await this.updateSubmission(dbSubmissions[i]);
 		}
-		let checkedUids = new Set();
-		for (let i = 0; i < dbSubmissions.length; i++) {
-			checkedUids.add(dbSubmissions[i].uid);
+		let updatedSubmissions = [];
+		for (const item of dbSubmissions) {
+			let res = await submissionModel.findOne({
+				submissionId: item.submissionId,
+			});
+			updatedSubmissions.push(res);
 		}
-		return checkedUids;
+		return updatedSubmissions;
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
