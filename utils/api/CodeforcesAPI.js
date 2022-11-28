@@ -52,6 +52,10 @@ class CodeforcesAPI {
 		// Updating
 		this.currentCheckerBrowser = false;
 		this.currentCheckerPage = false;
+
+		// Scraping
+		this.currentScraperBrowser = false;
+		this.currentScraperPage = false;
 	}
 
 	async init() {
@@ -215,11 +219,11 @@ class CodeforcesAPI {
 			await this.ensureLoggedIn();
 			if (!this.currentSubmitBrowser) {
 				console.log(
-					`Submitting solution for ${contestId}${problemIndex} Failed: \n Could not open Puppeteer for submitting.`
+					`Submitting solution for ${contestId}${problemIndex} Failed: \n Could not open Puppeteer.`
 				);
 				return [
 					false,
-					`Submitting solution for ${contestId}${problemIndex} Failed: \n Could not open Puppeteer for submitting.`,
+					`Submitting solution for ${contestId}${problemIndex} Failed: \n Could not open Puppeteer.`,
 				];
 			}
 			if (!this.currentSubmitPage) {
@@ -463,8 +467,13 @@ class CodeforcesAPI {
 	async updateSubmission(submission) {
 		await this.ensureCheckerBrowser();
 		if (!this.currentCheckerBrowser) {
-			console.log("Could not open Puppeteer for checking.");
-			return [false, "Could not open Puppeteer for checking."];
+			console.log(
+				"Checking submission failed: could not open Puppeteer."
+			);
+			return [
+				false,
+				"Checking submission failed: Could not open Puppeteer.",
+			];
 		}
 		if (!this.currentCheckerPage) {
 			this.currentCheckerPage =
@@ -706,27 +715,41 @@ class CodeforcesAPI {
 	////////////////////////////////////////////////////////////////////////////////////////
 	// Scraper
 
+	async ensureScraperBrowser() {
+		if (this.currentScraperBrowser) return;
+		this.currentScraperBrowser = await puppeteer.launch({
+			args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
+			headless: false,
+			ignoreHTTPSErrors: true,
+			executablePath: executablePath(),
+		});
+	}
+
 	async updateProblemsInDatabase() {
 		console.log("Updating CF Problemset: fetching CF Problems");
-		let problem_list = await this.getProblemList();
+		let problemList = await this.getProblemList();
+		let filteredProblems = problemList.filter((problem) => {
+			return problem.rating;
+		}); // Get only the problems that have a rating
+		console.log(filteredProblems);
 		console.log("Updating CF Problemset: scraping CF Problems");
 		let scraped_problems = [];
 		for (let i = 0; i < 100; i++) {
 			let interactive = false;
-			for (let j = 0; j < problem_list[i].tags?.length; j++) {
-				if (problem_list[i].tags[j] === "interactive")
+			for (let j = 0; j < filteredProblems[i].tags?.length; j++) {
+				if (filteredProblems[i].tags[j] === "interactive")
 					interactive = true; // TO DO
 			}
 			if (interactive) continue;
 			let content = await this.getProblemContent(
-				problem_list[i].contestId,
-				problem_list[i].index
+				filteredProblems[i].contestId,
+				filteredProblems[i].index
 			);
 			if (!content) continue; // if problem was not properly scraped
-			scraped_problems.push({ ...problem_list[i], content: content });
+			scraped_problems.push({ ...filteredProblems[i], content: content });
 			console.log(
 				`Updating CF Problemset: scraped ${i + 1}/${
-					problem_list.length
+					filteredProblems.length
 				}`
 			);
 		}
@@ -820,87 +843,100 @@ class CodeforcesAPI {
 		const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 		let resp;
 		try {
-			resp = await this.client.get(
-				`https://codeforces.com/problemset/problem/${contestId}/${index}`
+			await this.ensureScraperBrowser();
+			if (!this.currentScraperBrowser) {
+				console.log(
+					`Scraping solution for ${contestId}${index} Failed: \n Could not open Puppeteer.`
+				);
+				return [
+					false,
+					`Scraping solution for ${contestId}${index} Failed: \n Could not open Puppeteer.`,
+				];
+			}
+			if (!this.currentScraperPage) {
+				this.currentScraperPage =
+					await this.currentScraperBrowser.newPage();
+				await this.currentScraperPage.setDefaultTimeout(8000);
+				await this.currentScraperPage.setRequestInterception(true);
+				this.currentScraperPage.on("request", (request) => {
+					if (request.resourceType() === "image") request.abort();
+					else request.continue();
+				});
+			}
+			await this.currentScraperPage.goto(
+				`https://codeforces.com/problemset/problem/${contestId}/${index}`,
+				{
+					waitUntil: "domcontentloaded",
+				}
 			);
+			let resp = await this.currentScraperPage.content();
+			try {
+				// translate Codeforces's inline and display equation delimiters to something MathJax understands
+				let texFilteredResp = resp.replace(
+					/\$\$\$\$\$\$(.*?)\$\$\$\$\$\$/g,
+					"\\[$1\\]"
+				);
+				texFilteredResp = texFilteredResp.replace(
+					/\$\$\$(.*?)\$\$\$/g,
+					"\\($1\\)"
+				);
+				let problemConstraints = await this.findProblemConstraints(
+					texFilteredResp,
+					contestId,
+					index
+				);
+				let problemStatement = await this.findProblemStatement(
+					texFilteredResp,
+					contestId,
+					index
+				);
+				let problemInput = await this.findProblemInput(
+					texFilteredResp,
+					contestId,
+					index
+				);
+				let problemOutput = await this.findProblemOutput(
+					texFilteredResp,
+					contestId,
+					index
+				);
+				let problemTestCases = await this.findProblemTestCases(
+					texFilteredResp,
+					contestId,
+					index
+				);
+				let problemNote = await this.findProblemNote(
+					texFilteredResp,
+					contestId,
+					index
+				);
+				if (
+					!problemConstraints ||
+					!problemStatement ||
+					!problemInput ||
+					!problemOutput ||
+					!problemTestCases
+				)
+					return false;
+				return {
+					constraints: problemConstraints,
+					statement: problemStatement,
+					input: problemInput,
+					output: problemOutput,
+					testCases: problemTestCases,
+					note: problemNote,
+				};
+			} catch (e) {
+				console.log(
+					`Couldn't fetch problem ${contestId}${index} content: ` + e
+				);
+			}
 		} catch (e) {
 			console.log(
 				`Couldn't fetch problem ${contestId}${index}, will retry: ` + e
 			);
-		}
-		while (!resp || !resp.ok) {
-			await sleep(100);
-			try {
-				resp = await this.client.get(
-					`https://codeforces.com/problemset/problem/${contestId}/${index}`
-				);
-			} catch (e) {
-				console.log(
-					`Couldn't fetch problem ${contestId}${index}, will retry: ` +
-						e
-				);
-			}
-		}
-		try {
-			// translate Codeforces's inline and display equation delimiters to something MathJax understands
-			let texFilteredResp = resp.text.replace(
-				/\$\$\$\$\$\$(.*?)\$\$\$\$\$\$/g,
-				"\\[$1\\]"
-			);
-			texFilteredResp = texFilteredResp.replace(
-				/\$\$\$(.*?)\$\$\$/g,
-				"\\($1\\)"
-			);
-			let problemConstraints = await this.findProblemConstraints(
-				texFilteredResp,
-				contestId,
-				index
-			);
-			let problemStatement = await this.findProblemStatement(
-				texFilteredResp,
-				contestId,
-				index
-			);
-			let problemInput = await this.findProblemInput(
-				texFilteredResp,
-				contestId,
-				index
-			);
-			let problemOutput = await this.findProblemOutput(
-				texFilteredResp,
-				contestId,
-				index
-			);
-			let problemTestCases = await this.findProblemTestCases(
-				texFilteredResp,
-				contestId,
-				index
-			);
-			let problemNote = await this.findProblemNote(
-				texFilteredResp,
-				contestId,
-				index
-			);
-			if (
-				!problemConstraints ||
-				!problemStatement ||
-				!problemInput ||
-				!problemOutput ||
-				!problemTestCases
-			)
-				return false;
-			return {
-				constraints: problemConstraints,
-				statement: problemStatement,
-				input: problemInput,
-				output: problemOutput,
-				testCases: problemTestCases,
-				note: problemNote,
-			};
-		} catch (e) {
-			console.log(
-				`Couldn't fetch problem ${contestId}${index} content: ` + e
-			);
+			await this.getProblemContent(contestId, index);
+			return;
 		}
 	}
 }

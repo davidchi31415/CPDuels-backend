@@ -115,16 +115,6 @@ const playerSchema = mongoose.Schema({
 		required: true,
 		default: 0,
 	},
-	solveCount: {
-		type: Number,
-		required: true,
-		default: 0,
-	},
-	attemptCount: {
-		type: Number,
-		required: true,
-		default: 0,
-	},
 });
 
 const duelSchema = mongoose.Schema({

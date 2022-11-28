@@ -55,6 +55,9 @@ const socketManager = new SocketManager(io); // Really, the server manager
 await socketManager.init();
 
 // const api = new CodeforcesAPI();
+// await api.updateProblemsInDatabase();
+
+// const api = new CodeforcesAPI();
 // setInterval(async () => {
 // 	await api.updateSubmissions();
 // }, 10000);

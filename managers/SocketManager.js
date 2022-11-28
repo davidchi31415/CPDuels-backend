@@ -13,7 +13,7 @@ class SocketManager {
 			let updatedCFSubmissions = await this.codeforcesAPI.updateSubmissions();
 			if (updatedCFSubmissions?.length) {
 				for (const item of updatedCFSubmissions) {
-					// await duelManager.updateProblem(item.duelId, item.uid, item.problemNumber, item.status);
+					await duelManager.updateProblem(item.duelId, item.uid, item.problemNumber, item.status, item.createdAt);
 					io.emit("submission-change", { uid: item.uid });
 				}
 			}
