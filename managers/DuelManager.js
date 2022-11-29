@@ -156,7 +156,7 @@ class DuelManager {
 		await this.changeDuelState(id, "FINISHED");
 		let duel = await this.getDuel(id);
 		let winner = duel.players[0].username;
-		if (uid === duel.players[1].uid) winner = duel.players[1].uersname;
+		if (uid === duel.players[0].uid) winner = duel.players[1].username;
 		await duelModel.findOneAndUpdate(
 			{
 				_id: ObjectId(id),
