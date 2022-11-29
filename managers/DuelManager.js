@@ -387,7 +387,7 @@ class DuelManager {
 			console.log("Ratio: ", ratio);
 			let rawScore = Math.floor(ratio * problemPoints);
 			console.log("Raw score: ", rawScore);
-			let finalScore = rawScore - (attempts - 1) * 50; // 50 points off per wrong submission
+			let finalScore = Math.max(0, rawScore - (attempts - 1) * 50); // 50 points off per wrong submission
 			console.log("Final score: ", finalScore);
 			return finalScore;
 		}
