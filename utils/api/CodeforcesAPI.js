@@ -716,7 +716,7 @@ class CodeforcesAPI {
       max = Math.floor(max);
       const biasTowardsMin = Math.random();
       let indexOverMin = Math.floor(Math.random() * (max - min)); // [0, max-min) because we don't want to include the last index
-      returnIndex = Math.floor(indexOverMin * biasTowardsMin) + min; // Bias it to 0 by multiplying by factor between 0 to 1
+      let returnIndex = Math.floor(biasTowardsMin * indexOverMin) + min; // Bias it to 0 by multiplying by factor between 0 to 1
       return returnIndex;
     }
 
