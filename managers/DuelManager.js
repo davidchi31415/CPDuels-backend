@@ -172,7 +172,7 @@ class DuelManager {
 	async finishDuel(id) {
 		await this.changeDuelState(id, "FINISHED");
 		// await this.checkProblemSolves(id);
-    // await this.codeforcesAPI.updateSubmissions();
+		// await this.codeforcesAPI.updateSubmissions();
 		let winner = await this.findWinner(id);
 		await duelModel.findOneAndUpdate(
 			{
@@ -392,6 +392,24 @@ class DuelManager {
 			return finalScore;
 		}
 		return 0;
+	}
+
+	async getDuelFinishStatus(duelId) { // returns true if both players have completed all problems
+		let duel = await this.getDuel(duelId);
+		return (
+			this.getPlayerSolves(duel, 0) === duel.problems.length &&
+			this.getPlayerSolves(duel, 1) === duel.problems.length
+		);
+	}
+
+	getPlayerSolves(duel, playerNum) {
+		let solves = 0;
+		for (let i = 0; i < duel.problems.length; i++) {
+			if (duel.problems[i].playerSolveTimes[playerNum]) {
+				solves++;
+			}
+		}
+		return solves;
 	}
 }
 

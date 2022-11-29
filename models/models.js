@@ -109,7 +109,7 @@ const problemSchema = mongoose.Schema({
 		],
 		required: true,
 		default: [0, 0],
-	}
+	},
 });
 
 const playerSchema = mongoose.Schema({
@@ -189,6 +189,9 @@ const duelSchema = mongoose.Schema({
 	},
 	startTime: {
 		type: Number,
+	},
+	filter: {
+		type: Boolean,
 	},
 });
 
