@@ -10,10 +10,17 @@ class SocketManager {
 		const duelManager = new DuelManager(this.codeforcesAPI, taskManager);
 		// taskManager.init();
 		setInterval(async () => {
-			let updatedCFSubmissions = await this.codeforcesAPI.updateSubmissions();
+			let updatedCFSubmissions =
+				await this.codeforcesAPI.updateSubmissions();
 			if (updatedCFSubmissions?.length) {
 				for (const item of updatedCFSubmissions) {
-					await duelManager.updateProblem(item.duelId, item.uid, item.problemNumber, item.status, item.createdAt);
+					await duelManager.updateProblem(
+						item.duelId,
+						item.uid,
+						item.problemNumber,
+						item.status,
+						item.createdAt
+					);
 					io.emit("submission-change", { uid: item.uid });
 				}
 			}
@@ -76,8 +83,10 @@ class SocketManager {
 						// await duelManager.checkProblemSolves(roomId);
 						let duel = await duelManager.getDuel(roomId);
 						if (
-							duel.playerOneSolves === duel.problems.length ||
-							duel.playerTwoSolves === duel.problems.length
+							this.getPlayerSolves(duel, 0) ===
+								duel.problems.length ||
+							this.getPlayerSolves(duel, 1) ===
+								duel.problems.length
 						) {
 							if (this.timeInterval)
 								clearInterval(this.timeInterval);
@@ -130,9 +139,16 @@ class SocketManager {
 							submission
 						);
 						if (submitted[0]) {
-							io.emit("problem-submitted-success", { roomId: roomId, uid: uid });
+							io.emit("problem-submitted-success", {
+								roomId: roomId,
+								uid: uid,
+							});
 						} else {
-							io.emit("problem-submitted-error", { roomId: roomId, uid: uid, message: "Could not submit. Try again."});
+							io.emit("problem-submitted-error", {
+								roomId: roomId,
+								uid: uid,
+								message: "Could not submit. Try again.",
+							});
 						}
 					} else {
 						console.log(
@@ -295,6 +311,16 @@ class SocketManager {
 			return "Time's up.";
 		}
 		return Math.ceil((maxTime - timeDifference) / 1000);
+	}
+
+	getPlayerSolves(duel, playerNum) {
+		let solves = 0;
+		for (let i = 0; i < duel.problems.length; i++) {
+			if (duel.problems[i].playerSolveTimes[playerNum]) {
+				solves++;
+			}
+		}
+		return solves;
 	}
 }
 

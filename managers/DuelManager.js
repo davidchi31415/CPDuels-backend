@@ -171,7 +171,8 @@ class DuelManager {
 
 	async finishDuel(id) {
 		await this.changeDuelState(id, "FINISHED");
-		await this.checkProblemSolves(id);
+		// await this.checkProblemSolves(id);
+    // await this.codeforcesAPI.updateSubmissions();
 		let winner = await this.findWinner(id);
 		await duelModel.findOneAndUpdate(
 			{
@@ -223,11 +224,9 @@ class DuelManager {
 				}
 			);
 	}
-
 	async addProblems(id) {
 		let duel = await this.getDuel(id);
 		let problems = await this.taskManager.createDuelProblems(duel);
-		console.log(problems);
 
 		await duelModel.findOneAndUpdate(
 			{
@@ -462,13 +461,32 @@ class DuelManager {
 		let p1Score = 0;
 		let p2Score = 0;
 		for (let i = 0; i < duel.problems.length; i++) {
-			p1Score += this.calculateScore(
+			let p1ProblemScore = this.calculatePlayerScoreForProblem(
 				duel,
+				duel.problems[i].duelPoints,
 				duel.problems[i].playerSolveTimes[0]
 			);
-			p2Score += this.calculateScore(
+			p1Score += p1ProblemScore;
+
+			let p2ProblemScore = this.calculatePlayerScoreForProblem(
 				duel,
+				duel.problems[i].duelPoints,
 				duel.problems[i].playerSolveTimes[1]
+			);
+			p2Score += p2ProblemScore;
+
+			let setP1ProblemScore = `problems.${i}.playerScores.0`;
+			let setP2ProblemScore = `problems.${i}.playerScores.1`;
+			await duelModel.findOneAndUpdate(
+				{
+					_id: duelId,
+				},
+				{
+					$set: {
+						[setP1ProblemScore]: p1ProblemScore,
+						[setP2ProblemScore]: p2ProblemScore,
+					},
+				}
 			);
 		}
 		await duelModel.findOneAndUpdate(
@@ -485,19 +503,13 @@ class DuelManager {
 		console.log("Successfully updated duel scores");
 	}
 
-	calculateScore(duel, solveTime) {
+	calculatePlayerScoreForProblem(duel, problemPoints, solveTime) {
 		if (solveTime) {
 			let timeToSolve = solveTime - duel.startTime;
-			console.log(
-				"🚀 ~ file: DuelManager.js ~ line 490 ~ DuelManager ~ calculateScore ~ timeToSolve",
-				timeToSolve
-			);
-			let ratio = timeToSolve / (duel.timeLimit * 60000);
-			console.log(
-				"🚀 ~ file: DuelManager.js ~ line 491 ~ DuelManager ~ calculateScore ~ ratio",
-				ratio
-			);
-			console.log(1 - ratio);
+			console.log("Time to solve: ", timeToSolve);
+			let ratio = 1 - timeToSolve / (duel.timeLimit * 60);
+			console.log("Ratio: ", ratio);
+			return Math.floor(ratio * problemPoints);
 		}
 		return 0;
 	}

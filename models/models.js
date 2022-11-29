@@ -53,7 +53,11 @@ const problemSchema = mongoose.Schema({
 		required: true,
 		default: "PROGRAMMING",
 	},
-	points: {
+	rating: {
+		type: Number,
+		required: true,
+	},
+	duelPoints: {
 		type: Number,
 		required: true,
 		default: 0,
@@ -94,6 +98,18 @@ const problemSchema = mongoose.Schema({
 		required: true,
 		default: [0, 0],
 	},
+	playerScores: {
+		type: [
+			{
+				type: Number,
+			},
+			{
+				type: Number,
+			},
+		],
+		required: true,
+		default: [0, 0],
+	}
 });
 
 const playerSchema = mongoose.Schema({

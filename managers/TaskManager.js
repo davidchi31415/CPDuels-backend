@@ -36,6 +36,16 @@ class TaskManager {
    async isValidSubmitRequest(duel, uid, submission) {}
   */
 
+	calculateProblemPoints(platform, problemRating, duelRatingMin) {
+		if (platform === "CF") {
+			// base is 500 points, add however many points over the rating min of duel
+			return problemRating - duelRatingMin + 500;
+		} else if (platform === "AT") {
+		} else {
+			// Leetcode
+		}
+	}
+
 	async createDuelProblems(duel) {
 		let usernames = [duel.players[0].username, duel.players[1].username];
 		let problems;
@@ -46,6 +56,17 @@ class TaskManager {
 				duel.ratingMin,
 				duel.ratingMax
 			);
+			for (let i = 0; i < problems.length; i++) {
+				problems[i] = {
+					...problems[i],
+					duelPoints: this.calculateProblemPoints(
+						duel.platform,
+						problems[i].rating,
+						duel.ratingMin
+					),
+				};
+				console.log(problems[i]);
+			}
 		} else if (platform === "AT") {
 			// problems = await AtcoderAPI.generateProblems(duel.problemCount, usernames, duel.ratingMin, duel.ratingMax);
 		} else if (platform === "LC") {
