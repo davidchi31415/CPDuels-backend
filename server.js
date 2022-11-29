@@ -51,11 +51,11 @@ const io = new Server(
 
 export default db;
 
-const socketManager = new SocketManager(io); // Really, the server manager
-await socketManager.init();
+// const socketManager = new SocketManager(io); // Really, the server manager
+// await socketManager.init();
 
-// const api = new CodeforcesAPI();
-// await api.updateProblemsInDatabase();
+const api = new CodeforcesAPI();
+await api.updateProblemsInDatabase();
 
 // const api = new CodeforcesAPI();
 // setInterval(async () => {

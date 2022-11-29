@@ -48,11 +48,13 @@ class TaskManager {
 
 	async createDuelProblems(duel) {
 		let usernames = [duel.players[0].username, duel.players[1].username];
+		let guestStatuses = [duel.players[0].guest, duel.players[1].guest];
 		let problems;
 		if (duel.platform === "CF") {
 			problems = await this.codeforcesAPI.generateProblems(
 				duel.problemCount,
 				usernames,
+				guestStatuses,
 				duel.ratingMin,
 				duel.ratingMax
 			);
@@ -65,7 +67,6 @@ class TaskManager {
 						duel.ratingMin
 					),
 				};
-				console.log(problems[i]);
 			}
 		} else if (platform === "AT") {
 			// problems = await AtcoderAPI.generateProblems(duel.problemCount, usernames, duel.ratingMin, duel.ratingMax);
