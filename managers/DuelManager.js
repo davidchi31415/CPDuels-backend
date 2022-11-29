@@ -240,132 +240,6 @@ class DuelManager {
 		);
 	}
 
-	// async updateProblemScores(playerNum, solves, id) {
-	// 	/* Scores
-	//       Each attempt increases attempt number. Only correct submissions affect score.
-	//       Attempt number increases penalty (10%). If a player gets it right once, submissions afterwards
-	//       do not affect score. The player's score is bounded below by 0.
-	//       */
-
-	// 	// go through all submissions and for each problem check if solved
-	// 	// if solved skip submission, otherwise check if verdict is OK which will
-	// 	//duel.problems[i].contestId, duel.problems[i].index
-	// 	let duel = await this.getDuel(id);
-	// 	let problems = duel.problems;
-	// 	if (!problems) return; // problems undefined bug
-	// 	if (playerNum === 0) {
-	// 		// recalculate the number of attempts if problem not solved
-	// 		problems = problems.map((problem) => {
-	// 			return {
-	// 				...problem,
-	// 				playerOneAttempts:
-	// 					problem.playerOneScore === 0
-	// 						? 0
-	// 						: problem.playerOneAttempts,
-	// 			};
-	// 		});
-	// 		for (let i = 0; i < solves.length; i++) {
-	// 			for (let k = 0; k < problems.length; k++) {
-	// 				if (problems[k].playerOneScore > 0) continue; // if player already solved, stop considering
-	// 				if (
-	// 					solves[i].index === problems[k].index &&
-	// 					solves[i].contestId === problems[k].contestId
-	// 				) {
-	// 					// submission for problem match
-	// 					if (
-	// 						!solves[i].verdict ||
-	// 						solves[i].verdict === "TESTING"
-	// 					) {
-	// 						continue;
-	// 					}
-	// 					if (solves[i].verdict === "OK") {
-	// 						let penalty =
-	// 							problems[k].playerOneAttempts *
-	// 							0.1 *
-	// 							problems[k].points;
-	// 						problems[k].playerOneScore = Math.max(
-	// 							0,
-	// 							problems[k].points - penalty
-	// 						);
-	// 					}
-	// 					problems[k].playerOneAttempts++;
-	// 				}
-	// 			}
-	// 		}
-	// 	} else {
-	// 		// player two
-	// 		// recalculate the number of attempts if problem not solved
-	// 		problems = problems.map((problem) => {
-	// 			return {
-	// 				...problem,
-	// 				playerTwoAttempts:
-	// 					problem.playerTwoScore === 0
-	// 						? 0
-	// 						: problem.playerTwoAttempts,
-	// 			};
-	// 		});
-	// 		for (let i = 0; i < solves.length; i++) {
-	// 			for (let k = 0; k < problems.length; k++) {
-	// 				if (problems[k].playerTwoScore > 0) continue; // if player already solved, stop considering
-	// 				if (
-	// 					solves[i].index === problems[k].index &&
-	// 					solves[i].contestId === problems[k].contestId
-	// 				) {
-	// 					// submission for problem match
-	// 					if (
-	// 						!solves[i].verdict ||
-	// 						solves[i].verdict === "TESTING"
-	// 					) {
-	// 						continue;
-	// 					}
-	// 					if (solves[i].verdict === "OK") {
-	// 						let penalty =
-	// 							problems[k].playerTwoAttempts *
-	// 							0.1 *
-	// 							problems[k].points;
-	// 						problems[k].playerTwoScore = Math.max(
-	// 							0,
-	// 							problems[k].points - penalty
-	// 						);
-	// 					}
-	// 					problems[k].playerTwoAttempts++;
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-
-	// 	await duelModel.findOneAndUpdate(
-	// 		{
-	// 			_id: ObjectId(id),
-	// 		},
-	// 		{
-	// 			$set: {
-	// 				problems: problems,
-	// 			},
-	// 		}
-	// 	);
-	// }
-
-	// async checkProblemSolves(id) {
-	// 	let duel = await this.getDuel(id);
-	// 	let playerOneSolves = await this.taskManager.getUserSolves(
-	// 		duel,
-	// 		duel.players[0].username
-	// 	);
-	// 	let playerTwoSolves = await this.taskManager.getUserSolves(
-	// 		duel,
-	// 		duel.players[1].username
-	// 	);
-	// 	//duel.problems[i].contestId, duel.problems[i].index
-	// 	if (playerOneSolves) {
-	// 		await this.updateProblemScores(0, playerOneSolves, id);
-	// 	}
-	// 	if (playerTwoSolves) {
-	// 		await this.updateProblemScores(1, playerTwoSolves, id);
-	// 	}
-	// 	await this.updateDuelScores(id);
-	// }
-
 	async findWinner(id) {
 		let duel = await this.getDuel(id);
 		if (duel.players[0].score > duel.players[1].score) {
@@ -464,6 +338,7 @@ class DuelManager {
 			let p1ProblemScore = this.calculatePlayerScoreForProblem(
 				duel,
 				duel.problems[i].duelPoints,
+				duel.problems[i].playerAttempts[0],
 				duel.problems[i].playerSolveTimes[0]
 			);
 			p1Score += p1ProblemScore;
@@ -471,6 +346,7 @@ class DuelManager {
 			let p2ProblemScore = this.calculatePlayerScoreForProblem(
 				duel,
 				duel.problems[i].duelPoints,
+				duel.problems[i].playerAttempts[0],
 				duel.problems[i].playerSolveTimes[1]
 			);
 			p2Score += p2ProblemScore;
@@ -503,43 +379,20 @@ class DuelManager {
 		console.log("Successfully updated duel scores");
 	}
 
-	calculatePlayerScoreForProblem(duel, problemPoints, solveTime) {
+	calculatePlayerScoreForProblem(duel, problemPoints, attempts, solveTime) {
 		if (solveTime) {
 			let timeToSolve = solveTime - duel.startTime;
 			console.log("Time to solve: ", timeToSolve);
 			let ratio = 1 - timeToSolve / (duel.timeLimit * 60);
 			console.log("Ratio: ", ratio);
-			return Math.floor(ratio * problemPoints);
+			let rawScore = Math.floor(ratio * problemPoints);
+			console.log("Raw score: ", rawScore);
+			let finalScore = rawScore - (attempts - 1) * 50; // 50 points off per wrong submission
+			console.log("Final score: ", finalScore);
+			return finalScore;
 		}
 		return 0;
 	}
-
-	// async updateDuelScores(id) {
-	// 	let duel = await this.getDuel(id);
-	// 	let playerOneScore = 0;
-	// 	let playerTwoScore = 0;
-	// 	let playerOneSolves = 0;
-	// 	let playerTwoSolves = 0;
-	// 	for (let i = 0; i < duel.problems.length; i++) {
-	// 		playerOneScore += duel.problems[i].playerOneScore;
-	// 		playerTwoScore += duel.problems[i].playerTwoScore;
-	// 		if (duel.problems[i].playerOneScore) playerOneSolves++;
-	// 		if (duel.problems[i].playerTwoScore) playerTwoSolves++;
-	// 	}
-	// 	await duelModel.findOneAndUpdate(
-	// 		{
-	// 			_id: ObjectId(id),
-	// 		},
-	// 		{
-	// 			$set: {
-	// 				playerOneScore: playerOneScore,
-	// 				playerTwoScore: playerTwoScore,
-	// 				playerOneSolves: playerOneSolves,
-	// 				playerTwoSolves: playerTwoSolves,
-	// 			},
-	// 		}
-	// 	);
-	// }
 }
 
 export default DuelManager;

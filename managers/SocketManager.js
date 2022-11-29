@@ -8,6 +8,7 @@ class SocketManager {
 		this.codeforcesAPI = new CodeforcesAPI();
 		const taskManager = new TaskManager(this.codeforcesAPI);
 		const duelManager = new DuelManager(this.codeforcesAPI, taskManager);
+		this.timers = {};
 		// taskManager.init();
 		setInterval(async () => {
 			let updatedCFSubmissions =
@@ -78,33 +79,11 @@ class SocketManager {
 						roomId: roomId,
 						timeLeft: timeLimit * 60,
 					});
-
-					this.checkInterval = setInterval(async () => {
-						// await duelManager.checkProblemSolves(roomId);
-						let duel = await duelManager.getDuel(roomId);
-						if (
-							this.getPlayerSolves(duel, 0) ===
-								duel.problems.length ||
-							this.getPlayerSolves(duel, 1) ===
-								duel.problems.length
-						) {
-							if (this.timeInterval)
-								clearInterval(this.timeInterval);
-							if (this.checkInterval)
-								clearInterval(this.checkInterval);
-							await duelManager.finishDuel(roomId);
-							io.emit("status-change", {
-								roomId: roomId,
-								newStatus: "FINISHED",
-							});
-						}
-					}, 3000);
-					this.timeInterval = setInterval(async () => {
+					this.timers[roomId] = setInterval(async () => {
 						let timeLeft = await this.getTimeLeft(
 							startTime,
 							maxTime,
-							this.timeInterval,
-							this.checkInterval,
+							this.timers[roomId],
 							roomId,
 							io,
 							duelManager
@@ -180,9 +159,7 @@ class SocketManager {
 					}
 					if (valid) {
 						await duelManager.abortDuel(roomId);
-						if (this.checkInterval)
-							clearInterval(this.checkInterval);
-						if (this.timeInterval) clearInterval(this.timeInterval);
+						if (this.timers[roomId]) clearInterval(this.timers[roomId]);
 						io.emit("status-change", {
 							roomId: roomId,
 							newStatus: "ABORTED",
@@ -215,9 +192,7 @@ class SocketManager {
 					}
 					if (valid) {
 						await duelManager.resignDuel(roomId, uid);
-						if (this.checkInterval)
-							clearInterval(this.checkInterval);
-						if (this.timeInterval) clearInterval(this.timeInterval);
+						if (this.timers[roomId]) clearInterval(this.timers[roomId]);
 						io.emit("status-change", {
 							roomId: roomId,
 							newStatus: "FINISHED",
@@ -293,7 +268,6 @@ class SocketManager {
 		startTime,
 		maxTime,
 		timeInterval,
-		checkInterval,
 		roomId,
 		io,
 		duelManager
@@ -302,7 +276,6 @@ class SocketManager {
 		let timeDifference = Math.abs(curTime.getTime() - startTime.getTime());
 		if (timeDifference >= maxTime) {
 			if (timeInterval) clearInterval(timeInterval);
-			if (checkInterval) clearInterval(checkInterval);
 			await duelManager.finishDuel(roomId);
 			io.emit("status-change", {
 				roomId: roomId,
