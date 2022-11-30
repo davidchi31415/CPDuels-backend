@@ -569,7 +569,7 @@ class CodeforcesAPI {
 		if (guest || !filter) {
 			console.log("HERE");
 			validUsername = true;
-		} else {
+		} else {is
 			validUsername = (await this.checkUsername(username))[0];
 		}
 		if (!validUsername) {

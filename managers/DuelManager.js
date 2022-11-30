@@ -77,7 +77,7 @@ class DuelManager {
 		}
 		let validUsername;
 		if (duel.platform === "CF") {
-			validUsername = await this.codeforcesAPI.checkUsername(username);
+			validUsername = await CodeforcesAPI.checkUsername(username);
 		}
 		// else if (duel.platform === "AT") {
 		// 	// validUsername = await AtcoderAPI.checkUsername(username);
