@@ -327,37 +327,6 @@ class CodeforcesAPI {
 
 	/////////////////////////////////////////////////////////////////////////////////
 	// Updating Submissions
-
-	static async getAPIResponse(url, params) {
-		try {
-			let tries = 0;
-			let returnObj;
-			while (tries < 5) {
-				tries++;
-				let responseData = {
-					status: "",
-					comment: "",
-				};
-				await fetch(url, params).then(async (res) => {
-					if (res.status === 503) {
-						// Limit exceeded error
-						responseData.status = "FAILED";
-						responseData.comment = "limit exceeded";
-						await sleep(1000);
-					} else {
-						responseData = await res.json();
-					}
-				});
-				if (responseData?.status === "OK") return responseData;
-				returnObj = responseData;
-			}
-			return returnObj; // Return if fail after 5 tries and not limit exceeded
-		} catch (e) {
-			console.log(e);
-			return false;
-		}
-	}
-
 	async ensureCheckerBrowser() {
 		if (this.currentCheckerBrowser) return;
 		this.currentCheckerBrowser = await puppeteer.launch({
@@ -545,9 +514,39 @@ class CodeforcesAPI {
 	///////////////////////////////////////////////////////////////////////////////
 	// Duels
 
+	static async getAPIResponse(url, params) {
+		try {
+			let tries = 0;
+			let returnObj;
+			while (tries < 5) {
+				tries++;
+				let responseData = {
+					status: "",
+					comment: "",
+				};
+				await fetch(url, params).then(async (res) => {
+					if (res.status === 503) {
+						// Limit exceeded error
+						responseData.status = "FAILED";
+						responseData.comment = "limit exceeded";
+						await sleep(1000);
+					} else {
+						responseData = await res.json();
+					}
+				});
+				if (responseData?.status === "OK") return responseData;
+				returnObj = responseData;
+			}
+			return returnObj; // Return if fail after 5 tries and not limit exceeded
+		} catch (e) {
+			console.log(e);
+			return false;
+		}
+	}
+
 	static async checkUsername(username) {
 		const url = `https://codeforces.com/api/user.info?handles=${username}`;
-		const response = await this.getAPIResponse(url);
+		const response = await CodeforcesAPI.getAPIResponse(url);
 		if (!response) {
 			return [false, "Codeforces API Error"];
 		}
@@ -569,8 +568,8 @@ class CodeforcesAPI {
 		if (guest || !filter) {
 			console.log("HERE");
 			validUsername = true;
-		} else {is
-			validUsername = (await this.checkUsername(username))[0];
+		} else {
+			validUsername = await CodeforcesAPI.checkUsername(username)[0];
 		}
 		if (!validUsername) {
 			return [false, "Inavlid CF Username"];
@@ -587,10 +586,10 @@ class CodeforcesAPI {
 		return [true, "good"];
 	}
 
-	async getUserSubmissions(username) {
+	static async getUserSubmissions(username) {
 		const url = `https://codeforces.com/api/user.status?handle=${username}`;
 		console.log(url);
-		const response = await this.getAPIResponse(url);
+		const response = await CodeforcesAPI.getAPIResponse(url);
 		if (!response) return [false, "CF API Error"];
 		if (response.status !== "OK") return [false, response.comment];
 		let data = [];
@@ -617,59 +616,59 @@ class CodeforcesAPI {
 		return data;
 	}
 
-	async getUserSubmissionsAfterTime(username, time) {
-		const url = `https://codeforces.com/api/user.status?handle=${username}`;
-		console.log(url);
-		let time1 = Date.now();
-		const response = await this.getAPIResponse(url);
-		console.log(time1 - Date.now());
-		if (!response) return [false, "CF API Error"];
-		if (response.status !== "OK") return [false, response.comment];
-		let data = [];
-		try {
-			let time2 = Date.now();
-			for (let i = 0; i < response.result.length; i++) {
-				let submission = response.result[i];
-				if (submission.creationTimeSeconds < time) break;
-				if (!submission.hasOwnProperty("verdict"))
-					submission.verdict = null;
-				let problem = submission.problem;
-				data.push({
-					contestId: problem.contestId,
-					index: problem.index,
-					name: problem.name,
-					type: problem.type,
-					rating: problem.rating,
-					creationTimeSeconds: submission.creationTimeSeconds,
-					verdict: submission.verdict,
-				});
-			}
-			console.log(Date.now() - time2);
-		} catch (e) {
-			console.log("Getting User Submissions FAILED: " + e);
-		}
-		return data;
-	}
+	// static async getUserSubmissionsAfterTime(username, time) {
+	// 	const url = `https://codeforces.com/api/user.status?handle=${username}`;
+	// 	console.log(url);
+	// 	let time1 = Date.now();
+	// 	const response = await CodeforcesAPI.getAPIResponse(url);
+	// 	console.log(time1 - Date.now());
+	// 	if (!response) return [false, "CF API Error"];
+	// 	if (response.status !== "OK") return [false, response.comment];
+	// 	let data = [];
+	// 	try {
+	// 		let time2 = Date.now();
+	// 		for (let i = 0; i < response.result.length; i++) {
+	// 			let submission = response.result[i];
+	// 			if (submission.creationTimeSeconds < time) break;
+	// 			if (!submission.hasOwnProperty("verdict"))
+	// 				submission.verdict = null;
+	// 			let problem = submission.problem;
+	// 			data.push({
+	// 				contestId: problem.contestId,
+	// 				index: problem.index,
+	// 				name: problem.name,
+	// 				type: problem.type,
+	// 				rating: problem.rating,
+	// 				creationTimeSeconds: submission.creationTimeSeconds,
+	// 				verdict: submission.verdict,
+	// 			});
+	// 		}
+	// 		console.log(Date.now() - time2);
+	// 	} catch (e) {
+	// 		console.log("Getting User Submissions FAILED: " + e);
+	// 	}
+	// 	return data;
+	// }
 
-	async getContestList() {
+	static async getContestList() {
 		const url = "https://codeforces.com/api/contest.list";
-		const response = await this.getAPIResponse(url);
+		const response = await CodeforcesAPI.getAPIResponse(url);
 		if (!response) {
 			return false;
 		}
 		return response["result"];
 	}
 
-	async getProblemList() {
+	static async getProblemList() {
 		const url = "https://codeforces.com/api/problemset.problems";
-		const response = await this.getAPIResponse(url);
+		const response = await CodeforcesAPI.getAPIResponse(url);
 		if (!response) {
 			return false;
 		}
 		return response["result"]["problems"];
 	}
 
-	async getProblems(filter = {}, fields = {}) {
+	static async getDBProblems(filter = {}, fields = {}) {
 		// filter for the problems we're looking for
 		// fields for the parts of the problems
 
@@ -681,21 +680,21 @@ class CodeforcesAPI {
 		return result;
 	}
 
-	async getProblemsByUsernamesAndRating(
+	static async getUserFilteredProblems(
 		usernames,
 		guestStatuses,
 		ratingMin,
 		ratingMax
 	) {
-		let ratedProblems = await this.getProblems({
+		let ratedProblems = await CodeforcesAPI.getDBProblems({
 			rating: { $gte: ratingMin, $lte: ratingMax },
 		});
 		let submissions1 = [];
 		if (!guestStatuses[0])
-			submissions1 = await this.getUserSubmissions(usernames[0]);
+			submissions1 = await CodeforcesAPI.getUserSubmissions(usernames[0]);
 		let submissions2 = [];
 		if (!guestStatuses[1])
-			submissions2 = await this.getUserSubmissions(usernames[1]);
+			submissions2 = await CodeforcesAPI.getUserSubmissions(usernames[1]);
 		let combinedSubmissions = submissions1.concat(
 			submissions2.filter((item) => submissions1.indexOf(item) < 0)
 		);
@@ -733,7 +732,7 @@ class CodeforcesAPI {
 		ratingMin,
 		ratingMax
 	) {
-		let problems = await this.getProblemsByUsernamesAndRating(
+		let problems = await CodeforcesAPI.getUserFilteredProblems(
 			usernames,
 			guestStatuses,
 			ratingMin,
@@ -776,7 +775,7 @@ class CodeforcesAPI {
 
 	async updateProblemsInDatabase() {
 		console.log("Updating CF Problemset: fetching CF Problems");
-		let problemList = await this.getProblemList();
+		let problemList = await CodeforcesAPI.getProblemList();
 		let filteredProblems = problemList.filter((problem) => {
 			return problem.rating;
 		}); // Get only the problems that have a rating

@@ -22,7 +22,7 @@ class SocketManager {
 						item.status,
 						item.createdAt
 					);
-					io.emit("submission-change", { uid: item.uid });
+					io.emit("submission-change", { duelId: item.duelId });
 				}
 			}
 		}, 10000);
@@ -61,7 +61,7 @@ class SocketManager {
 					}
 				}
 			});
-			socket.on("start-duel", async ({ roomId }) => {
+			socket.on("start-duel", async ({ roomId, uid }) => {
 				console.log("Timer Starting");
 				let duelState = await duelManager.getDuelState(roomId);
 				if (duelState === "READY") {
