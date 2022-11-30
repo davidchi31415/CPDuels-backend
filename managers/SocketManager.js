@@ -39,7 +39,8 @@ class SocketManager {
 					let validJoin = await duelManager.isValidJoinRequest(
 						roomId,
 						username,
-						guest
+						guest,
+						duel.filter
 					);
 					if (validJoin[0]) {
 						await duelManager.addDuelPlayer(

@@ -31,7 +31,8 @@ class DuelManager {
 		problemCount,
 		ratingMin,
 		ratingMax,
-		timeLimit
+		timeLimit,
+		filter
 	) {
 		let validProblemCount =
 			problemCount && problemCount >= 1 && problemCount <= 10;
@@ -48,7 +49,8 @@ class DuelManager {
 				players[0].username,
 				players[0].guest,
 				ratingMin,
-				ratingMax
+				ratingMax,
+				filter
 			);
 		} else if (platform === "AT") {
 			// validParams = await AtcoderAPI.checkDuelParams(players[0].username, ratingMin, ratingMax);
@@ -61,14 +63,14 @@ class DuelManager {
 		return [true];
 	}
 
-	async isValidJoinRequest(duelId, username, guest) {
+	async isValidJoinRequest(duelId, username, guest, filter) {
 		let duel = await this.getDuel(duelId);
 
 		if (duel.players.length === 2) {
 			// username multiple players joining at once
 			return [false, "Duel Full"];
 		}
-		if (guest) return [true]; // Skip the username checking if it is a guest join request
+		if (guest || !filter) return [true]; // Skip the username checking if it is a guest join request or no filtering
 		let owner = duel.players[0];
 		if (owner.username === username) {
 			return [false, "Duplicate Usernames"];
@@ -394,7 +396,8 @@ class DuelManager {
 		return 0;
 	}
 
-	async getDuelFinishStatus(duelId) { // returns true if both players have completed all problems
+	async getDuelFinishStatus(duelId) {
+		// returns true if both players have completed all problems
 		let duel = await this.getDuel(duelId);
 		return (
 			this.getPlayerSolves(duel, 0) === duel.problems.length &&

@@ -30,7 +30,8 @@ duelsRouter.post("/add", async (req, res) => {
 		req.body.problemCount,
 		req.body.ratingMin,
 		req.body.ratingMax,
-		req.body.timeLimit
+		req.body.timeLimit,
+		req.body.filter
 	);
 	console.log(validDuel);
 	try {
