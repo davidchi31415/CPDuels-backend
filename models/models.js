@@ -131,6 +131,9 @@ const playerSchema = mongoose.Schema({
 		required: true,
 		default: 0,
 	},
+	ready: {
+		type: Boolean,
+	}
 });
 
 const duelSchema = mongoose.Schema({

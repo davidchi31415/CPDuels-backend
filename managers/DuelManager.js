@@ -124,6 +124,11 @@ class DuelManager {
 		);
 	}
 
+	async initializeDuel(id) {
+		await this.changeDuelState(id, "INITIALIZED");
+		await this.addProblems(id);
+	}
+
 	async startDuel(id) {
 		await this.changeDuelState(id, "ONGOING");
 		var startTime = new Date().getTime() / 1000;
@@ -137,7 +142,6 @@ class DuelManager {
 				},
 			}
 		);
-		await this.addProblems(id);
 	}
 
 	async abortDuel(id) {
@@ -403,6 +407,16 @@ class DuelManager {
 			this.getPlayerSolves(duel, 0) === duel.problems.length &&
 			this.getPlayerSolves(duel, 1) === duel.problems.length
 		);
+	}
+
+	async getDuelReadyStatus(duelId) {
+		// returns true if both players have readied up.
+		let duel = await this.getDuel(duelId);
+	
+		let playerOneReady = duel.players[0].ready;
+		let playerTwoReady = duel.players[1].ready;
+
+		return playerOneReady && playerTwoReady;
 	}
 
 	getPlayerSolves(duel, playerNum) {
