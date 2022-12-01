@@ -131,7 +131,7 @@ class CodeforcesAPI {
     if (this.currentSubmitBrowser) return;
     this.currentSubmitBrowser = await puppeteer.launch({
       args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
-      headless: false,
+      headless: true,
       ignoreHTTPSErrors: true,
       executablePath: executablePath(),
     });
@@ -325,7 +325,7 @@ class CodeforcesAPI {
     if (this.currentCheckerBrowser) return;
     this.currentCheckerBrowser = await puppeteer.launch({
       args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
-      headless: false,
+      headless: true,
       ignoreHTTPSErrors: true,
       executablePath: executablePath(),
     });
@@ -663,7 +663,7 @@ class CodeforcesAPI {
     if (this.currentScraperBrowser) return;
     this.currentScraperBrowser = await puppeteer.launch({
       args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
-      headless: false,
+      headless: true,
       ignoreHTTPSErrors: true,
       executablePath: executablePath(),
     });
