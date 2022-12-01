@@ -1,4 +1,6 @@
+import duelModel from "../models/models.js";
 import Queue from "../utils/helpers/queue.js";
+import DuelManager from "./DuelManager.js";
 
 class TaskManager {
 	constructor(codeforcesAPI) {
@@ -77,6 +79,65 @@ class TaskManager {
 			// Error
 		}
 		return problems;
+	}
+
+	// regenerateProblem( // takes in array of old problems and generates new ones
+	// 	oldProblems,
+	// 	usernames,
+	// 	guestStatuses,
+	// 	ratingMin,
+	// 	ratingMax,
+	// 	filter
+	// )
+
+	async regenerateProblems(duel, unwantedProblemIndices) { // oldProblemsIndices 
+		let usernames = [duel.players[0].username, duel.players[1].username];
+		let guestStatuses = [duel.players[0].guest, duel.players[1].guest];
+
+		// let problems;
+		// let duel = await this.getDuel(id);
+		let unwantedProblems = [];
+		unwantedProblemIndices.forEach(index => {
+			unwantedProblems.push(duel.problems[index]);
+		});
+		let newProblems;
+		if (duel.platform === "CF") {
+			newProblems = await this.codeforcesAPI.regenerateProblems(
+				unwantedProblems,
+				oldProblems,
+				usernames,
+				guestStatuses,
+				duel.ratingMin,
+				duel.ratingMax,
+				duel.filter
+			);
+			for (let i = 0; i < newProblems.length; i++) {
+				newProblems[i] = {
+					...newProblems[i],
+					duelPoints: this.calculateProblemPoints(
+						duel.platform,
+						newProblems[i].rating,
+						duel.ratingMin
+					),
+				};
+			}
+		} else if (platform === "AT") {
+			// problems = await AtcoderAPI.generateProblems(duel.problemCount, usernames, duel.ratingMin, duel.ratingMax);
+		} else if (platform === "LC") {
+			// problems = await LeetcodeAPI.generateProblems(duel.problemCount, usernames, duel.ratingMin, duel.ratingMax);
+		} else {
+			// Error
+		}
+		let i = 0;
+		unwantedProblemIndices.forEach(async (index) => {
+			let setting = `problems.${index}`;
+			await duelModel.findOneAndUpdate({_id: duel._id},{
+				$set: {
+					[setting]: newProblems[i],
+				}
+			})
+			i++;
+		});
 	}
 
 	async taskSubmit(duel, uid, submission) {

@@ -685,7 +685,8 @@ class CodeforcesAPI {
 		guestStatuses,
 		ratingMin,
 		ratingMax,
-		filter
+		filter,
+		oldProblems
 	) {
 		let ratedProblems = await CodeforcesAPI.getDBProblems({
 			rating: { $gte: ratingMin, $lte: ratingMax },
@@ -717,6 +718,16 @@ class CodeforcesAPI {
 				});
 			}
 		}
+		if (oldProblems) {
+			filteredProblems = filteredProblems.filter((problem) => {
+				return !oldProblems.some((f) => {
+					return (
+						f.contestId === problem.contestId &&
+						f.index === problem.index
+					);
+				});
+			});
+		}
 		let prioritizedProblems = filteredProblems.sort((a, b) => {
 			// Sort in ascending order of rating then descending order of time of contest
 			if (a.rating < b.rating) {
@@ -729,6 +740,15 @@ class CodeforcesAPI {
 			return 1;
 		});
 		return prioritizedProblems;
+	}
+
+	getRandomIndex(min, max) {
+		min = Math.ceil(min);
+		max = Math.floor(max);
+		const biasTowardsMin = Math.random();
+		let indexOverMin = Math.floor(Math.random() * (max - min)); // [0, max-min) because we don't want to include the last index
+		let returnIndex = Math.floor(biasTowardsMin * indexOverMin) + min; // Bias it to 0 by multiplying by factor between 0 to 1
+		return returnIndex;
 	}
 
 	async generateProblems(
@@ -747,25 +767,45 @@ class CodeforcesAPI {
 			filter
 		);
 
-		function getRandomIndex(min, max) {
-			min = Math.ceil(min);
-			max = Math.floor(max);
-			const biasTowardsMin = Math.random();
-			let indexOverMin = Math.floor(Math.random() * (max - min)); // [0, max-min) because we don't want to include the last index
-			let returnIndex = Math.floor(biasTowardsMin * indexOverMin) + min; // Bias it to 0 by multiplying by factor between 0 to 1
-			return returnIndex;
-		}
-
 		let problemSet = [];
 		for (let i = 0; i < numProblems; i++) {
 			// Divide into sections, since this is sorted by rating, then find random position in each section
-			let index = getRandomIndex(
+			let index = this.getRandomIndex(
 				(i * problems.length) / numProblems,
 				((i + 1) * problems.length) / numProblems
 			);
 			problemSet.push(problems[index]);
 		}
 		return problemSet;
+	}
+
+	async regenerateProblem( // takes in array of old problems and generates new ones
+		unwantedProblems,
+		oldProblems,
+		usernames,
+		guestStatuses,
+		ratingMin,
+		ratingMax,
+		filter
+	) {
+		let problems = await CodeforcesAPI.getUserProblems(
+			usernames,
+			guestStatuses,
+			ratingMin,
+			ratingMax,
+			filter,
+			unwantedProblems
+		);
+		let newProblems = [];
+		for (let i = 0; i < oldProblems.length; i++) {
+			// Divide into sections, since this is sorted by rating, then find random position in each section
+			let index = this.getRandomIndex(
+				(i * problems.length) / oldProblems.length,
+				((i + 1) * problems.length) / oldProblems.length
+			);
+			newProblems.push(problems[index]);
+		}
+		return newProblems;
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////
