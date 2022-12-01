@@ -39,7 +39,6 @@ class SocketManager {
             roomId,
             username,
             guest,
-            duel.filter
           );
           if (validJoin[0]) {
             await duelManager.addDuelPlayer(roomId, username, guest, uid);
@@ -58,6 +57,7 @@ class SocketManager {
       });
       socket.on("player-ready", async ({ roomId, uid }) => {
         let duel = await duelManager.getDuel(roomId);
+        if (duel.regeneratingProblems) return; // Do not allow duel to begin while regenerating problems.
         let playerNum;
         for (let i = 0; i < duel.players.length; i++) {
           if (duel.players[i].uid === uid) playerNum = i + 1;
@@ -142,6 +142,7 @@ class SocketManager {
       socket.on("regenerate-problems", async ({ roomId, problemIndices }) => {
         // regenerate problem with array of problemNumbers
         let duel = await duelManager.getDuel(roomId);
+        console.log(roomId);
         io.emit("regenerate-problems-received", { roomId });
         await taskManager.regenerateProblems(duel, problemIndices);
         io.emit("regenerate-problems-completed", { roomId });
