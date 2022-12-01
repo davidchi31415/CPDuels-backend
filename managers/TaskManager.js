@@ -90,7 +90,8 @@ class TaskManager {
 	// 	filter
 	// )
 
-	async regenerateProblems(duel, unwantedProblemIndices) { // oldProblemsIndices 
+	async regenerateProblems(duel, unwantedProblemIndices) { // oldProblemsIndices
+		console.log("Regenerating Problems");
 		let usernames = [duel.players[0].username, duel.players[1].username];
 		let guestStatuses = [duel.players[0].guest, duel.players[1].guest];
 
@@ -103,14 +104,22 @@ class TaskManager {
 		let newProblems;
 		if (duel.platform === "CF") {
 			newProblems = await this.codeforcesAPI.regenerateProblems(
+				duel.problems,
 				unwantedProblems,
-				oldProblems,
 				usernames,
 				guestStatuses,
 				duel.ratingMin,
 				duel.ratingMax,
 				duel.filter
 			);
+		// 	async regenerateProblems( // takes in array of old problems and generates new ones
+		// unwantedProblems,
+		// oldProblems,
+		// usernames,
+		// guestStatuses,
+		// ratingMin,
+		// ratingMax,
+		// filter
 			for (let i = 0; i < newProblems.length; i++) {
 				newProblems[i] = {
 					...newProblems[i],
@@ -128,16 +137,15 @@ class TaskManager {
 		} else {
 			// Error
 		}
-		let i = 0;
-		unwantedProblemIndices.forEach(async (index) => {
-			let setting = `problems.${index}`;
+		console.log(unwantedProblemIndices);
+		for(let i = 0; i < unwantedProblemIndices.length; i++) {
+			let setting =  `problems.${unwantedProblemIndices[i]}`
 			await duelModel.findOneAndUpdate({_id: duel._id},{
 				$set: {
 					[setting]: newProblems[i],
 				}
-			})
-			i++;
-		});
+			});
+		};
 	}
 
 	async taskSubmit(duel, uid, submission) {

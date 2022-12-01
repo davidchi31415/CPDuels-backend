@@ -686,7 +686,7 @@ class CodeforcesAPI {
 		ratingMin,
 		ratingMax,
 		filter,
-		oldProblems
+		unwantedProblems
 	) {
 		let ratedProblems = await CodeforcesAPI.getDBProblems({
 			rating: { $gte: ratingMin, $lte: ratingMax },
@@ -718,9 +718,9 @@ class CodeforcesAPI {
 				});
 			}
 		}
-		if (oldProblems) {
+		if (unwantedProblems) {
 			filteredProblems = filteredProblems.filter((problem) => {
-				return !oldProblems.some((f) => {
+				return !unwantedProblems.some((f) => {
 					return (
 						f.contestId === problem.contestId &&
 						f.index === problem.index
@@ -779,7 +779,7 @@ class CodeforcesAPI {
 		return problemSet;
 	}
 
-	async regenerateProblem( // takes in array of old problems and generates new ones
+	async regenerateProblems( // takes in array of old problems and generates new ones
 		unwantedProblems,
 		oldProblems,
 		usernames,
