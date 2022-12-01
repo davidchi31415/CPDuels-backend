@@ -56,7 +56,8 @@ class TaskManager {
 				usernames,
 				guestStatuses,
 				duel.ratingMin,
-				duel.ratingMax
+				duel.ratingMax,
+				duel.filter
 			);
 			for (let i = 0; i < problems.length; i++) {
 				problems[i] = {

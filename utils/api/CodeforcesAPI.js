@@ -680,36 +680,42 @@ class CodeforcesAPI {
 		return result;
 	}
 
-	static async getUserFilteredProblems(
+	static async getUserProblems(
 		usernames,
 		guestStatuses,
 		ratingMin,
-		ratingMax
+		ratingMax,
+		filter
 	) {
 		let ratedProblems = await CodeforcesAPI.getDBProblems({
 			rating: { $gte: ratingMin, $lte: ratingMax },
 		});
-		let submissions1 = [];
-		if (!guestStatuses[0])
-			submissions1 = await CodeforcesAPI.getUserSubmissions(usernames[0]);
-		let submissions2 = [];
-		if (!guestStatuses[1])
-			submissions2 = await CodeforcesAPI.getUserSubmissions(usernames[1]);
-		let combinedSubmissions = submissions1.concat(
-			submissions2.filter((item) => submissions1.indexOf(item) < 0)
-		);
-
-		//contestId index
 		let filteredProblems = ratedProblems;
-		if (combinedSubmissions.length) {
-			filteredProblems = filteredProblems.filter((problem) => {
-				return !combinedSubmissions.some((f) => {
-					return (
-						f.contestId === problem.contestId &&
-						f.index === problem.index
-					);
+		if (filter) {
+			// filter rated problems by user submissions if the duel needs filtering
+			let submissions1 = [];
+			if (!guestStatuses[0])
+				submissions1 = await CodeforcesAPI.getUserSubmissions(
+					usernames[0]
+				);
+			let submissions2 = [];
+			if (!guestStatuses[1])
+				submissions2 = await CodeforcesAPI.getUserSubmissions(
+					usernames[1]
+				);
+			let combinedSubmissions = submissions1.concat(
+				submissions2.filter((item) => submissions1.indexOf(item) < 0)
+			);
+			if (combinedSubmissions.length) {
+				filteredProblems = filteredProblems.filter((problem) => {
+					return !combinedSubmissions.some((f) => {
+						return (
+							f.contestId === problem.contestId &&
+							f.index === problem.index
+						);
+					});
 				});
-			});
+			}
 		}
 		let prioritizedProblems = filteredProblems.sort((a, b) => {
 			// Sort in ascending order of rating then descending order of time of contest
@@ -730,13 +736,15 @@ class CodeforcesAPI {
 		usernames,
 		guestStatuses,
 		ratingMin,
-		ratingMax
+		ratingMax,
+		filter
 	) {
-		let problems = await CodeforcesAPI.getUserFilteredProblems(
+		let problems = await CodeforcesAPI.getUserProblems(
 			usernames,
 			guestStatuses,
 			ratingMin,
-			ratingMax
+			ratingMax,
+			filter
 		);
 
 		function getRandomIndex(min, max) {
