@@ -143,42 +143,52 @@ class CodeforcesAPI {
 
   async puppeteerLogin() {
     await this.ensureSubmitBrowser();
-    if (!this.currentSubmitBrowser) return false;
-    const page = await this.currentSubmitBrowser.newPage();
-    page.setDefaultTimeout(8000); // 8 second timeout
-    await page.setRequestInterception(true);
-    page.on("request", (request) => {
-      if (request.resourceType() === "image") request.abort();
-      else request.continue();
-    });
-    await page.goto("https://codeforces.com/enter/", {
-      waitUntil: "networkidle2",
-    });
-    let login = this.loginInfo.getCurAndUpdate();
-    await page.waitForSelector("input[id=handleOrEmail]");
-    await page.type("input[id=handleOrEmail]", login[0]);
-    await page.waitForSelector("input[id=password]");
-    await page.type("input[id=password]", login[1]);
-    await page.waitForSelector("input[class=submit]");
-    await page.click("input[class=submit]");
     try {
-      // Successful login
-      await page.waitForSelector(`a[href="/profile/${login[0]}"]`);
-      console.log(`Logged in to account ${login[0]}.`);
-      this.lastLoginTime = Date.now();
-      this.loggedIn = true;
-      this.currentAccount = login[0];
-    } catch {
-      // Failed to login
-      console.log(
-        `Could not login with account ${login[0]}: trying with next account`
-      );
-      await this.switchAccounts();
+      const page = await this.currentSubmitBrowser.newPage();
+      page.setDefaultTimeout(8000); // 8 second timeout
+      await page.setRequestInterception(true);
+      page.on("request", (request) => {
+        if (request.resourceType() === "image") request.abort();
+        else request.continue();
+      });
+      await page.goto("https://codeforces.com/enter/", {
+        waitUntil: "networkidle2",
+      });
+      let login = this.loginInfo.getCurAndUpdate();
+      await page.waitForSelector("input[id=handleOrEmail]");
+      await page.type("input[id=handleOrEmail]", login[0]);
+      await page.waitForSelector("input[id=password]");
+      await page.type("input[id=password]", login[1]);
+      await page.waitForSelector("input[class=submit]");
+      await page.click("input[class=submit]");
+      try {
+        // Successful login
+        await page.waitForSelector(`a[href="/profile/${login[0]}"]`);
+        console.log(`Logged in to account ${login[0]}.`);
+        this.lastLoginTime = Date.now();
+        this.loggedIn = true;
+        this.currentAccount = login[0];
+      } catch {
+        // Failed to login
+        console.log(
+          `Could not login with account ${login[0]}: trying with next account`
+        );
+        await this.switchAccounts();
+      }
+    } catch (err) {
+      console.log(`Login Error: `, err);
+      this.currentSubmitBrowser = false;
+      this.currentSubmitPage = false;
+      await this.puppeteerLogin();
     }
   }
 
   async logout() {
-    await this.currentSubmitBrowser.close();
+    try {
+      await this.currentSubmitBrowser.close();
+    } catch (err) {
+      console.log("Couldn't close submit browser.");
+    }
     this.currentSubmitBrowser = false;
     this.currentSubmitPage = false;
     this.currentSubmissionCount = 0;
@@ -524,20 +534,14 @@ class CodeforcesAPI {
     return result;
   }
 
-  static async getRatedProblems(
-    ratingMin,
-    ratingMax,
-    unwantedProblems
-  ) {
+  static async getRatedProblems(ratingMin, ratingMax, unwantedProblems) {
     let ratedProblems = await CodeforcesAPI.getDBProblems({
       rating: { $gte: ratingMin, $lte: ratingMax },
     });
     if (unwantedProblems?.length) {
       ratedProblems = ratedProblems.filter((problem) => {
         return !unwantedProblems.some((f) => {
-          return (
-            f.contestId === problem.contestId && f.index === problem.index
-          );
+          return f.contestId === problem.contestId && f.index === problem.index;
         });
       });
     }
@@ -564,15 +568,8 @@ class CodeforcesAPI {
     return returnIndex;
   }
 
-  async generateProblems(
-    numProblems,
-    ratingMin,
-    ratingMax,
-  ) {
-    let problems = await CodeforcesAPI.getRatedProblems(
-      ratingMin,
-      ratingMax,
-    );
+  async generateProblems(numProblems, ratingMin, ratingMax) {
+    let problems = await CodeforcesAPI.getRatedProblems(ratingMin, ratingMax);
     let problemSet = [];
     for (let i = 0; i < numProblems; i++) {
       // Divide into sections, since this is sorted by rating, then find random position in each section
@@ -589,7 +586,7 @@ class CodeforcesAPI {
     unwantedProblems,
     oldProblems,
     ratingMin,
-    ratingMax,
+    ratingMax
   ) {
     let problems = await CodeforcesAPI.getRatedProblems(
       ratingMin,
