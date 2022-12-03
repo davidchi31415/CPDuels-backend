@@ -12,7 +12,9 @@ import DuelManager from "./managers/DuelManager.js";
 import TaskManager from "./managers/TaskManager.js";
 import submissionsRouter from "./routes/submissionsRouter.js";
 import messagesRouter from "./routes/messagesRouter.js";
-
+import LeetcodeAPI from "./utils/api/LeetCodeAPI.js";
+import { LeetCode } from "leetcode-query";
+const leetcode = new LeetCode();
 const app = express();
 var corsOptions = {
 	origin: allowedOrigins,
@@ -53,7 +55,10 @@ export default db;
 
 const socketManager = new SocketManager(io); // Really, the server manager
 await socketManager.init();
+// const api = new LeetcodeAPI();
 
+// await api.updateProblemsInDatabase();
+// console.log(await leetcode.user("username"));
 // const api = new CodeforcesAPI();
 // await api.updateProblemsInDatabase();
 
