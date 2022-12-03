@@ -556,7 +556,7 @@ class CodeforcesAPI {
 	///////////////////////////////////////////////////////////////////////////////
 	// Duels
 
-	static async checkDuelParams(ratingMin, ratingMax) {
+	static checkDuelParams(ratingMin, ratingMax) {
 		// For validating duel creation request
 		let validRatings =
 			ratingMin &&

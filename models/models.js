@@ -41,7 +41,7 @@ const cfproblemSchema = mongoose.Schema({
 });
 
 const lcproblemSchema = mongoose.Schema({
-	title: {
+	name: {
 		type: String,
 		required: true,
 	},
@@ -52,22 +52,11 @@ const lcproblemSchema = mongoose.Schema({
 	difficulty: {
 		type: Number,
 		requried: true,
+		index: true,
 	},
 	content: {
 		type: {},
 		required: true,
-	},
-	exampleTestCases: {
-		type: String,
-	},
-	codeSnippets: {
-		type: [],
-	},
-	hints: {
-		type: [],
-	},
-	sampleTestCase: {
-		type: String,
 	},
 	likesDislikes: {
 		type: [],
@@ -75,13 +64,13 @@ const lcproblemSchema = mongoose.Schema({
 });
 
 const problemSchema = mongoose.Schema({
-	contestId: {
-		type: Number,
-		required: true,
-	},
-	index: {
+	platform: {
 		type: String,
 		required: true,
+	},
+	accessor: {
+		type: {},
+		required: true
 	},
 	name: {
 		type: String,
@@ -315,6 +304,9 @@ const messageSchema = mongoose.Schema({
 export const cfproblemModel = mongoose.models.CFProblem
 	? mongoose.model.CFProblem
 	: mongoose.model("CFProblem", cfproblemSchema);
+export const lcproblemModel = mongoose.models.LCProblem
+	? mongoose.model.LCProblem
+	: mongoose.model("LCProblem", lcproblemSchema);
 export const playerModel = mongoose.models.playerModel
 	? mongoose.models.playerModel
 	: mongoose.model("Player", playerSchema);

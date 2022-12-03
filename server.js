@@ -2,6 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import duelsRouter from "./routes/duelsRouter.js";
 import cfproblemsRouter from "./routes/cfproblemsRouter.js";
+import lcproblemsRouter from "./routes/lcproblemsRouter.js";
 import { Server } from "socket.io";
 import allowedOrigins from "./config/origins.js";
 import { sleep } from "./utils/helpers/sleep.js";
@@ -12,48 +13,49 @@ import DuelManager from "./managers/DuelManager.js";
 import TaskManager from "./managers/TaskManager.js";
 import submissionsRouter from "./routes/submissionsRouter.js";
 import messagesRouter from "./routes/messagesRouter.js";
-import LeetcodeAPI from "./utils/api/LeetCodeAPI.js";
+import LeetcodeAPI from "./utils/api/LeetcodeAPI.js";
 const app = express();
 var corsOptions = {
-	origin: allowedOrigins,
-	optionsSuccessStatus: 200,
+  origin: allowedOrigins,
+  optionsSuccessStatus: 200,
 };
 
 app.use(cors(corsOptions));
 const PORT = process.env.PORT || 8080;
 const DATABASE_URL =
-	process.env.DATABASE_URL ||
-	"mongodb+srv://CPDuels:wrongfulphrasenimblemonumentshindigcardstockvastlyappraisalcloaktremor@cpduels.s78kdcw.mongodb.net/?retryWrites=true&w=majority";
+  process.env.DATABASE_URL ||
+  "mongodb://mongo:x9CGsku3E7kTrcvxZ15C@containers-us-west-81.railway.app:7259";
 
 mongoose.connect(DATABASE_URL);
 const db = mongoose.connection;
 db.on("error", (err) => console.log(err));
 db.once("open", async () => console.log("Connected to database."));
 while (mongoose.connection.readyState != 1) {
-	await sleep(1000);
+  await sleep(1000);
 }
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/duels", duelsRouter);
 app.use("/cfproblems", cfproblemsRouter);
+app.use("/lcproblems", lcproblemsRouter);
 app.use("/submissions", submissionsRouter);
 app.use("/messages", messagesRouter);
 const server = app.listen(PORT, () =>
-	console.log(`Server is started on port ${PORT}.`)
+  console.log(`Server is started on port ${PORT}.`)
 );
 const io = new Server(
-	server,
-	cors({
-		origin: allowedOrigins,
-	})
+  server,
+  cors({
+    origin: allowedOrigins,
+  })
 );
 export default db;
 
-// const socketManager = new SocketManager(io); // Really, the server manager
-// await socketManager.init();
-const api = new LeetcodeAPI();
-await api.updateProblemsInDatabase();
+const socketManager = new SocketManager(io); // Really, the server manager
+await socketManager.init();
+// const api = new LeetcodeAPI();
+// await api.updateProblemsInDatabase();
 // console.log(await api.getProblem("reverse-odd-levels-of-binary-tree"));
 // let problems = await api.getProblemList();
 // console.log(problems);
@@ -64,7 +66,7 @@ await api.updateProblemsInDatabase();
 // await api.updateProblemsInDatabase();
 
 // const api = new CodeforcesAPI();
-// // await api.updateProblemsInDatabase();
+// await api.updateProblemsInDatabase();
 // setInterval(async () => {
 // 	await api.updateSubmissions();
 // }, 10000);

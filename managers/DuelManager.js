@@ -2,11 +2,13 @@ import db from "../server.js";
 import { ObjectId } from "mongodb";
 import duelModel from "../models/models.js";
 import CodeforcesAPI from "../utils/api/CodeforcesAPI.js";
+import LeetcodeAPI from "../utils/api/LeetcodeAPI.js";
 // import languages from "./languages.js";
 
 class DuelManager {
-  constructor(codeforcesAPI, taskManager) {
+  constructor(codeforcesAPI, leetcodeAPI, taskManager) {
     this.codeforcesAPI = codeforcesAPI;
+    this.leetcodeAPI = leetcodeAPI;
     this.taskManager = taskManager;
   }
 
@@ -31,7 +33,7 @@ class DuelManager {
     problemCount,
     ratingMin,
     ratingMax,
-    timeLimit,
+    timeLimit
   ) {
     let validProblemCount =
       problemCount && problemCount >= 1 && problemCount <= 10;
@@ -44,14 +46,11 @@ class DuelManager {
     }
     let validParams;
     if (platform === "CF") {
-      validParams = await CodeforcesAPI.checkDuelParams(
-        ratingMin,
-        ratingMax,
-      );
+      validParams = CodeforcesAPI.checkDuelParams(ratingMin, ratingMax);
     } else if (platform === "AT") {
       // validParams = await AtcoderAPI.checkDuelParams(players[0].username, ratingMin, ratingMax);
     } else if (platform === "LC") {
-      // validParams = await LeetcodeAPI.checkDuelParams(players[0].username, ratingMin, ratingMax);
+      validParams = LeetcodeAPI.checkDuelParams(ratingMin, ratingMax);
     } else {
       return [false, "Invalid Platform"];
     }
@@ -251,8 +250,8 @@ class DuelManager {
       let duel = await this.getDuel(id);
       let problem = duel.problems[parseInt(submission.number) - 1];
       let submitted = await this.codeforcesAPI.puppeteerSubmitProblem(
-        problem.contestId,
-        problem.index,
+        problem.accessor.contestId,
+        problem.accessor.index,
         problem.name,
         submission.number,
         submission.content,

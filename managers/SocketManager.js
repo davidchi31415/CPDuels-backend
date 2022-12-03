@@ -1,13 +1,19 @@
 import DuelManager from "./DuelManager.js";
 import TaskManager from "./TaskManager.js";
 import CodeforcesAPI from "../utils/api/CodeforcesAPI.js";
+import LeetcodeAPI from "../utils/api/LeetcodeAPI.js";
 import duelModel, { submissionModel } from "../models/models.js";
 
 class SocketManager {
   constructor(io) {
     this.codeforcesAPI = new CodeforcesAPI();
-    const taskManager = new TaskManager(this.codeforcesAPI);
-    const duelManager = new DuelManager(this.codeforcesAPI, taskManager);
+    this.leetcodeAPI = new LeetcodeAPI();
+    const taskManager = new TaskManager(this.codeforcesAPI, this.leetcodeAPI);
+    const duelManager = new DuelManager(
+      this.codeforcesAPI,
+      this.leetcodeAPI,
+      taskManager
+    );
     this.timers = {};
     // taskManager.init();
     // setInterval(async () => {
@@ -38,7 +44,7 @@ class SocketManager {
           let validJoin = await duelManager.isValidJoinRequest(
             roomId,
             username,
-            guest,
+            guest
           );
           if (validJoin[0]) {
             await duelManager.addDuelPlayer(roomId, username, guest, uid);
