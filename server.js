@@ -13,8 +13,6 @@ import TaskManager from "./managers/TaskManager.js";
 import submissionsRouter from "./routes/submissionsRouter.js";
 import messagesRouter from "./routes/messagesRouter.js";
 import LeetcodeAPI from "./utils/api/LeetCodeAPI.js";
-import { LeetCode } from "leetcode-query";
-const leetcode = new LeetCode();
 const app = express();
 var corsOptions = {
 	origin: allowedOrigins,
@@ -50,12 +48,15 @@ const io = new Server(
 		origin: allowedOrigins,
 	})
 );
-
 export default db;
 
-const socketManager = new SocketManager(io); // Really, the server manager
-await socketManager.init();
-// const api = new LeetcodeAPI();
+// const socketManager = new SocketManager(io); // Really, the server manager
+// await socketManager.init();
+const api = new LeetcodeAPI();
+await api.updateProblemsInDatabase();
+// console.log(await api.getProblem("reverse-odd-levels-of-binary-tree"));
+// let problems = await api.getProblemList();
+// console.log(problems);
 
 // await api.updateProblemsInDatabase();
 // console.log(await leetcode.user("username"));
@@ -63,6 +64,7 @@ await socketManager.init();
 // await api.updateProblemsInDatabase();
 
 // const api = new CodeforcesAPI();
+// // await api.updateProblemsInDatabase();
 // setInterval(async () => {
 // 	await api.updateSubmissions();
 // }, 10000);
@@ -73,6 +75,7 @@ await socketManager.init();
 // 		1729,
 // 		"f",
 // 		"Bullshit name",
+// 		3,
 // 		`Random code: ${Date.now()}`,
 // 		73,
 // 		"123",

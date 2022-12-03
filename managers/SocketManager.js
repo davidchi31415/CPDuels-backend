@@ -10,21 +10,21 @@ class SocketManager {
     const duelManager = new DuelManager(this.codeforcesAPI, taskManager);
     this.timers = {};
     // taskManager.init();
-    setInterval(async () => {
-      let updatedCFSubmissions = await this.codeforcesAPI.updateSubmissions();
-      if (updatedCFSubmissions?.length) {
-        for (const item of updatedCFSubmissions) {
-          await duelManager.updateProblem(
-            item.duelId,
-            item.uid,
-            item.problemNumber,
-            item.status,
-            item.createdAt
-          );
-          io.emit("submission-change", { duelId: item.duelId });
-        }
-      }
-    }, 10000);
+    // setInterval(async () => {
+    //   let updatedCFSubmissions = await this.codeforcesAPI.updateSubmissions();
+    //   if (updatedCFSubmissions?.length) {
+    //     for (const item of updatedCFSubmissions) {
+    //       await duelManager.updateProblem(
+    //         item.duelId,
+    //         item.uid,
+    //         item.problemNumber,
+    //         item.status,
+    //         item.createdAt
+    //       );
+    //       io.emit("submission-change", { duelId: item.duelId });
+    //     }
+    //   }
+    // }, 10000);
     this.io = io;
     io.on("connection", async (socket) => {
       socket.on("join", (roomId) => {

@@ -2,13 +2,16 @@ import express from "express";
 import duelModel from "../models/models.js";
 import DuelManager from "../managers/DuelManager.js";
 import CodeforcesAPI from "../utils/api/CodeforcesAPI.js";
+import db from "../server.js";
 
 const duelsRouter = express.Router();
 
 // GET all duels
 duelsRouter.get("/", async (req, res) => {
 	try {
-		const duels = await duelModel.find();
+		let time = Date.now(); // await duelModel.find().lean();
+		const duels = await db.collection("duels").find({}).toArray();
+		console.log(Date.now() - time);
 		res.send(duels);
 	} catch (err) {
 		res.status(500).json({ message: err.message });
@@ -30,7 +33,7 @@ duelsRouter.post("/add", async (req, res) => {
 		req.body.problemCount,
 		req.body.ratingMin,
 		req.body.ratingMax,
-		req.body.timeLimit,
+		req.body.timeLimit
 	);
 	console.log(validDuel);
 	try {

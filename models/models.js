@@ -18,6 +18,11 @@ const cfproblemSchema = mongoose.Schema({
 		required: true,
 		default: "PROGRAMMING",
 	},
+	rating: {
+		type: Number,
+		required: true,
+		index: true,
+	},
 	points: {
 		type: Number,
 	},
@@ -36,11 +41,11 @@ const cfproblemSchema = mongoose.Schema({
 });
 
 const lcproblemSchema = mongoose.Schema({
-	question_title: {
+	title: {
 		type: String,
 		required: true,
 	},
-	question_title_slug: {
+	slug: {
 		type: String,
 		required: true,
 	},
@@ -48,14 +53,25 @@ const lcproblemSchema = mongoose.Schema({
 		type: Number,
 		requried: true,
 	},
-	isPaid: {
-		type: Boolean,
+	content: {
+		type: {},
 		required: true,
 	},
-	// content: {
-	// 	type: {},
-	// 	required: true,
-	// },
+	exampleTestCases: {
+		type: String,
+	},
+	codeSnippets: {
+		type: [],
+	},
+	hints: {
+		type: [],
+	},
+	sampleTestCase: {
+		type: String,
+	},
+	likesDislikes: {
+		type: [],
+	},
 });
 
 const problemSchema = mongoose.Schema({
@@ -93,8 +109,8 @@ const problemSchema = mongoose.Schema({
 		],
 		required: false,
 	},
-	content: {
-		type: Object,
+	databaseId: { 
+		type: String, // for retreiving problem content
 		required: true,
 	},
 	playerSolveTimes: {
