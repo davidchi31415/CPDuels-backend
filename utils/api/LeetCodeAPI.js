@@ -266,6 +266,7 @@ class LeetcodeAPI {
         content: {
           problemWhole: problemData.content,
           problemPreview: problemPreview,
+					codeSnippets: problemData.codeSnippets,
         },
       });
       console.log(
