@@ -9,7 +9,7 @@ import { executablePath } from "puppeteer";
 import PortalPlugin from "puppeteer-extra-plugin-portal";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import { submissionModel } from "../../models/models.js";
-import DEBUG from "../../config";
+import DEBUG from "../../config/debug.js";
 
 puppeteer.use(StealthPlugin());
 
