@@ -357,7 +357,7 @@ class CodeforcesAPI {
       args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
       headless: true,
       ignoreHTTPSErrors: true,
-      executablePath: "/usr/bin/chromium-browser",
+      executablePath: executablePath(),
     });
   }
 
@@ -709,7 +709,7 @@ class CodeforcesAPI {
       args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
       headless: true,
       ignoreHTTPSErrors: true,
-      executablePath: "/usr/bin/chromium-browser",
+      executablePath: executablePath(),
     });
   }
 
