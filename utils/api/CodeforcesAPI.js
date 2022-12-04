@@ -9,6 +9,7 @@ import { executablePath } from "puppeteer";
 import PortalPlugin from "puppeteer-extra-plugin-portal";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import { submissionModel } from "../../models/models.js";
+import DEBUG from "../../config";
 
 puppeteer.use(StealthPlugin());
 
@@ -131,7 +132,7 @@ class CodeforcesAPI {
 		if (this.currentSubmitBrowser) return;
 		this.currentSubmitBrowser = await puppeteer.launch({
 			args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
-			headless: false,
+			headless: !DEBUG,
 			ignoreHTTPSErrors: true,
 			executablePath: executablePath(),
 		});
@@ -360,7 +361,7 @@ class CodeforcesAPI {
 		if (this.currentCheckerBrowser) return;
 		this.currentCheckerBrowser = await puppeteer.launch({
 			args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
-			headless: false,
+			headless: !DEBUG,
 			ignoreHTTPSErrors: true,
 			executablePath: executablePath(),
 		});
