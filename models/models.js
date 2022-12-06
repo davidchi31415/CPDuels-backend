@@ -69,7 +69,7 @@ const problemSchema = mongoose.Schema({
 		required: true,
 	},
 	accessor: {
-		type: {},
+		type: Object,
 		required: true
 	},
 	name: {
