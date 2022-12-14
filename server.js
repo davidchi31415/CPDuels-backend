@@ -52,8 +52,9 @@ const io = new Server(
 );
 export default db;
 
-const socketManager = new SocketManager(io); // Really, the server manager
+const socketManager = new SocketManager(io);
 await socketManager.init();
+
 // const api = new LeetcodeAPI();
 // await api.updateProblemsInDatabase();
 // console.log(await api.getProblem("reverse-odd-levels-of-binary-tree"));

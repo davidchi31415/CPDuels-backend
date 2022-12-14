@@ -560,96 +560,134 @@ class CodeforcesAPI {
     // fields for the parts of the problems
 
     let result = await db
-      .collection("cfproblems")
+      .collection("cfproblemaccessors")
       .find(filter, fields)
       .toArray();
 
     return result;
   }
 
-  static async getRatedProblems(ratingMin, ratingMax, unwantedProblems) {
-    let ratedProblems = await CodeforcesAPI.getDBProblems(
-      {
-        rating: { $gte: ratingMin, $lte: ratingMax },
-      },
-      {
-        contestId: 1,
-        index: 1,
-        name: 1,
-        rating: 1,
-        _id: 1,
-      }
-    );
-    ratedProblems = ratedProblems.map((problem) => {
-      problem.databaseId = problem._id;
-      delete problem._id;
-      return problem;
-    });
-    if (unwantedProblems?.length) {
-      ratedProblems = ratedProblems.filter((problem) => {
-        return !unwantedProblems.some((f) => {
-          return f.contestId === problem.contestId && f.index === problem.index;
+  static async getRatedProblems(
+    numProblems,
+    ratingMin,
+    ratingMax,
+    unwantedProblems,
+    unwantedIndices
+  ) {
+    let numBins = (ratingMax - ratingMin) / 100 + 1; // Number of rating bins
+    console.log(numProblems, numBins);
+    let problems = [];
+    if (numProblems <= numBins) {
+      let subwidth = Math.floor(numBins / numProblems);
+      let remBins = numBins - numProblems * subwidth; // Leftover bins (distributed into lower ratings first)
+      let currMin = ratingMin;
+      for (let i = 0; i < numProblems; i++) {
+        let currMax = currMin + (subwidth - 1) * 100;
+        if (remBins) {
+          // If there are leftover bins, add one more
+          currMax += 100;
+          remBins--;
+        }
+        if (unwantedIndices?.length && !unwantedIndices.includes(i)) {
+          currMin = currMax + 100;
+          continue;
+        }
+        let ratedProblems = await CodeforcesAPI.getDBProblems({
+          rating: { $gte: currMin, $lte: currMax },
         });
-      });
-    }
-    let prioritizedProblems = ratedProblems.sort((a, b) => {
-      // Sort in ascending order of rating then descending order of time of contest
-      if (a.rating < b.rating) {
-        return -1;
-      } else if (a.rating === b.rating) {
-        if (a.contestId > b.contestId) return -1;
-        else if (a.contestId === b.contestId) return 0;
-        else return 1;
+        if (unwantedProblems?.length) {
+          // If there are unwanted problems (i.e. regen) then filter them out
+          ratedProblems = ratedProblems.filter((ratedProblem) => {
+            return !unwantedProblems.some((unwantedProblem) => {
+              unwantedProblem.contestId === ratedProblem.contestId &&
+                unwantedProblem.index === ratedProblem.index;
+            });
+          });
+        }
+        let randomIndex = Math.floor(Math.random() * ratedProblems.length);
+        problems.push(ratedProblems[randomIndex]);
+        currMin = currMax + 100;
       }
-      return 1;
-    });
-    return prioritizedProblems;
+    } else {
+      let binWidth = Math.floor(numProblems / numBins);
+      let remProblems = numProblems - numBins * binWidth; // Leftover problems (distributed into lower bins first)
+      let currMin = 0; // Problem Index min
+      for (let i = 0; i < numBins; i++) {
+        let currMax = currMin + (binWidth - 1); // Problem Index max
+        if (remProblems) {
+          // If there are leftover bins, add one more
+          currMax += 1;
+          remProblems--;
+        }
+        if (
+          unwantedIndices?.length &&
+          !unwantedIndices.some((index) => {
+            return index >= currMin && index <= currMax;
+          })
+        ) {
+          currMin = currMax + 1;
+          continue;
+        }
+        let binRating = ratingMin + i * 100;
+        let ratedProblems = await CodeforcesAPI.getDBProblems({
+          rating: { $eq: binRating },
+        });
+        if (unwantedProblems?.length) {
+          // If there are unwanted problems (i.e. regen) then filter them out
+          ratedProblems = ratedProblems.filter((ratedProblem) => {
+            return !unwantedProblems.some((unwantedProblem) => {
+              unwantedProblem.contestId === ratedProblem.contestId &&
+                unwantedProblem.index === ratedProblem.index;
+            });
+          });
+        }
+        let actualBinWidth = currMax - currMin + 1; // Accounts for extra from remainder of problems
+        for (let j = 0; j < actualBinWidth; j++) {
+          // Divide into sections to ensure distinct problems
+          let randomIndex = CodeforcesAPI.getRandomIndex(
+            (j * ratedProblems.length) / actualBinWidth,
+            ((j + 1) * ratedProblems.length) / actualBinWidth
+          );
+          problems.push(ratedProblems[randomIndex]);
+        }
+        currMin = currMax + 1;
+      }
+    }
+    return problems;
   }
 
-  getRandomIndex(min, max) {
+  static getRandomIndex(min, max) {
     min = Math.ceil(min);
     max = Math.floor(max);
-    const biasTowardsMin = Math.random();
     let indexOverMin = Math.floor(Math.random() * (max - min)); // [0, max-min) because we don't want to include the last index
-    let returnIndex = Math.floor(biasTowardsMin * indexOverMin) + min; // Bias it to 0 by multiplying by factor between 0 to 1
+    let returnIndex = indexOverMin + min; // Get amount over min to index
     return returnIndex;
   }
 
   async generateProblems(numProblems, ratingMin, ratingMax) {
-    let problems = await CodeforcesAPI.getRatedProblems(ratingMin, ratingMax);
-    let problemSet = [];
-    for (let i = 0; i < numProblems; i++) {
-      // Divide into sections, since this is sorted by rating, then find random position in each section
-      let index = this.getRandomIndex(
-        (i * problems.length) / numProblems,
-        ((i + 1) * problems.length) / numProblems
-      );
-      problemSet.push(problems[index]);
-    }
-    return problemSet;
+    let problems = await CodeforcesAPI.getRatedProblems(
+      numProblems,
+      ratingMin,
+      ratingMax
+    );
+    return problems;
   }
 
   async regenerateProblems( // takes in array of old problems and generates new ones
+    numProblems,
     unwantedProblems,
-    oldProblems,
+    unwantedIndices,
     ratingMin,
     ratingMax
   ) {
     let problems = await CodeforcesAPI.getRatedProblems(
+      numProblems,
       ratingMin,
       ratingMax,
-      unwantedProblems
+      unwantedProblems,
+      unwantedIndices
     );
-    let newProblems = [];
-    for (let i = 0; i < oldProblems.length; i++) {
-      // Divide into sections, since this is sorted by rating, then find random position in each section
-      let index = this.getRandomIndex(
-        (i * problems.length) / oldProblems.length,
-        ((i + 1) * problems.length) / oldProblems.length
-      );
-      newProblems.push(problems[index]);
-    }
-    return newProblems;
+    return problems;
   }
 
   ////////////////////////////////////////////////////////////////////////////////////////

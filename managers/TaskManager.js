@@ -6,7 +6,7 @@ class TaskManager {
   constructor(codeforcesAPI, leetcodeAPI) {
     this.queue = new Queue();
     this.codeforcesAPI = codeforcesAPI;
-		this.leetcodeAPI = leetcodeAPI;
+    this.leetcodeAPI = leetcodeAPI;
   }
   async init() {
     const checker = async function () {
@@ -76,13 +76,13 @@ class TaskManager {
         duel.ratingMin,
         duel.ratingMax
       );
-			for (let i = 0; i < problems.length; i++) {
+      for (let i = 0; i < problems.length; i++) {
         problems[i] = {
           ...problems[i],
           platform: duel.platform,
-					name: problems[i].name,
+          name: problems[i].name,
           accessor: {
-            slug: problems[i].slug
+            slug: problems[i].slug,
           },
           duelPoints: this.calculateProblemPoints(
             duel.platform,
@@ -115,8 +115,9 @@ class TaskManager {
       let newProblems;
       if (duel.platform === "CF") {
         newProblems = await this.codeforcesAPI.regenerateProblems(
+          duel.problemCount,
           unwantedProblems,
-          duel.problems,
+          unwantedProblemIndices,
           duel.ratingMin,
           duel.ratingMax
         );
@@ -134,8 +135,9 @@ class TaskManager {
         // problems = await AtcoderAPI.generateProblems(duel.problemCount, usernames, duel.ratingMin, duel.ratingMax);
       } else if (platform === "LC") {
         newProblems = await this.leetcodeAPI.regenerateProblems(
+          duel.problemCount,
           unwantedProblems,
-          duel.problems,
+          unwantedProblemIndices,
           duel.ratingMin,
           duel.ratingMax
         );
@@ -149,7 +151,7 @@ class TaskManager {
             ),
           };
         }
-	    } else {
+      } else {
         // Error
       }
       for (let i = 0; i < unwantedProblemIndices.length; i++) {

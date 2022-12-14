@@ -23,51 +23,109 @@ class LeetcodeAPI {
     // fields for the parts of the problems
 
     let result = await db
-      .collection("lcproblems")
+      .collection("lcproblemaccessors")
       .find(filter, fields)
       .toArray();
 
     return result;
   }
 
-  static async getRatedProblems(ratingMin, ratingMax, unwantedProblems) {
-    const projection = {
-      name: 1,
-      slug: 1,
-      difficulty: 1,
-      _id: 1,
-    };
-    let ratedProblems = await LeetcodeAPI.getDBProblems(
-      {
-        difficulty: { $gte: ratingMin, $lte: ratingMax },
-      },
-      projection
-    );
-    ratedProblems = ratedProblems.map((problem) => {
-      problem.databaseId = problem._id;
-      delete problem._id;
-      return problem;
-    });
-    if (unwantedProblems?.length) {
-      ratedProblems = ratedProblems.filter((problem) => {
-        return !unwantedProblems.some((f) => {
-          return f.slug === problem.slug;
+  static async getRatedProblems(
+    numProblems,
+    ratingMin,
+    ratingMax,
+    unwantedProblems,
+    unwantedIndices
+  ) {
+    let numBins = ratingMax - ratingMin + 1; // Number of rating bins
+    console.log(numProblems, numBins);
+    let problems = [];
+    if (numProblems <= numBins) {
+      let subwidth = Math.floor(numBins / numProblems);
+      let remBins = numBins - numProblems * subwidth; // Leftover bins (distributed into lower ratings first)
+      let currMin = ratingMin;
+      for (let i = 0; i < numProblems; i++) {
+        let currMax = currMin + subwidth - 1;
+        if (remBins) {
+          // If there are leftover bins, add one more
+          currMax += 1;
+          remBins--;
+        }
+        if (unwantedIndices?.length && !unwantedIndices.includes(i)) {
+          currMin = currMax + 1;
+          continue;
+        }
+        let ratedProblems = await LeetcodeAPI.getDBProblems({
+          difficulty: { $gte: currMin, $lte: currMax },
         });
-      });
-    }
-    let prioritizedProblems = ratedProblems.sort((a, b) => {
-      // Sort in ascending order of rating
-      if (a.difficulty < b.difficulty) {
-        return -1;
-      } else if (a.difficulty === b.difficulty) {
-        return 0;
+        if (unwantedProblems?.length) {
+          // If there are unwanted problems (i.e. regen) then filter them out
+          ratedProblems = ratedProblems.filter((ratedProblem) => {
+            return !unwantedProblems.some((unwantedProblem) => {
+              unwantedProblem.slug === ratedProblem.slug;
+            });
+          });
+        }
+        let randomIndex = Math.floor(Math.random() * ratedProblems.length);
+        problems.push(ratedProblems[randomIndex]);
+        currMin = currMax + 1;
       }
-      return 1;
-    });
-    return prioritizedProblems;
+    } else {
+      let binWidth = Math.floor(numProblems / numBins);
+      let remProblems = numProblems - numBins * binWidth; // Leftover problems (distributed into lower bins first)
+      let currMin = 0; // Problem Index min
+      for (let i = 0; i < numBins; i++) {
+        let currMax = currMin + (binWidth - 1); // Problem Index max
+        if (remProblems) {
+          // If there are leftover bins, add one more
+          currMax += 1;
+          remProblems--;
+        }
+        if (
+          unwantedIndices?.length &&
+          !unwantedIndices.some((index) => {
+            return index >= currMin && index <= currMax;
+          })
+        ) {
+          currMin = currMax + 1;
+          continue;
+        }
+        let binRating = ratingMin + i;
+        let ratedProblems = await LeetcodeAPI.getDBProblems({
+          difficulty: { $eq: binRating },
+        });
+        if (unwantedProblems?.length) {
+          // If there are unwanted problems (i.e. regen) then filter them out
+          ratedProblems = ratedProblems.filter((ratedProblem) => {
+            return !unwantedProblems.some((unwantedProblem) => {
+              unwantedProblem.slug === ratedProblem.slug;
+            });
+          });
+        }
+        let actualBinWidth = currMax - currMin + 1; // Accounts for extra from remainder of problems
+        for (let j = 0; j < actualBinWidth; j++) {
+          // Skip if not unwanted problem index
+          if (
+            unwantedIndices?.length &&
+            !unwantedIndices.includes(currMin + j)
+          ) {
+            continue;
+          }
+          // Divide into sections to ensure distinct problems
+          let randomIndex = LeetcodeAPI.getRandomIndex(
+            (j * ratedProblems.length) / actualBinWidth,
+            ((j + 1) * ratedProblems.length) / actualBinWidth
+          );
+          problems.push(ratedProblems[randomIndex]);
+        }
+        currMin = currMax + 1;
+      }
+    }
+    console.log(problems);
+    return problems;
   }
 
-  getRandomIndex(min, max) {
+  static getRandomIndex(min, max) {
     min = Math.ceil(min);
     max = Math.floor(max);
     let indexOverMin = Math.floor(Math.random() * (max - min)); // [0, max-min) because we don't want to include the last index
@@ -76,40 +134,29 @@ class LeetcodeAPI {
   }
 
   async generateProblems(numProblems, ratingMin, ratingMax) {
-    let problems = await LeetcodeAPI.getRatedProblems(ratingMin, ratingMax);
-    let problemSet = [];
-    for (let i = 0; i < numProblems; i++) {
-      // Divide into sections, since this is sorted by rating, then find random position in each section
-      let index = this.getRandomIndex(
-        (i * problems.length) / numProblems,
-        ((i + 1) * problems.length) / numProblems
-      );
-      problemSet.push(problems[index]);
-    }
-    return problemSet;
+    let problems = await LeetcodeAPI.getRatedProblems(
+      numProblems,
+      ratingMin,
+      ratingMax
+    );
+    return problems;
   }
 
   async regenerateProblems( // takes in array of old problems and generates new ones
+    numProblems,
     unwantedProblems,
-    oldProblems,
+    unwantedIndices,
     ratingMin,
     ratingMax
   ) {
     let problems = await LeetcodeAPI.getRatedProblems(
+      numProblems,
       ratingMin,
       ratingMax,
-      unwantedProblems
+      unwantedProblems,
+      unwantedIndices
     );
-    let newProblems = [];
-    for (let i = 0; i < oldProblems.length; i++) {
-      // Divide into sections, since this is sorted by rating, then find random position in each section
-      let index = this.getRandomIndex(
-        (i * problems.length) / oldProblems.length,
-        ((i + 1) * problems.length) / oldProblems.length
-      );
-      newProblems.push(problems[index]);
-    }
-    return newProblems;
+    return problems;
   }
 
   ///////////////////////////////////////////////////////////
@@ -257,16 +304,18 @@ class LeetcodeAPI {
       let res = await this.getProblem(filteredProblems[i].slug);
       let problemData = res.question;
       let problemPreview = this.findProblemPreview(problemData.content);
-			if (!problemPreview) {
-				console.log(`Couldn't get problem preview for ${filteredProblems[i].slug}`);
-				continue;
-			}
+      if (!problemPreview) {
+        console.log(
+          `Couldn't get problem preview for ${filteredProblems[i].slug}`
+        );
+        continue;
+      }
       scraped_problems.push({
         ...filteredProblems[i],
         content: {
           problemWhole: problemData.content,
           problemPreview: problemPreview,
-					codeSnippets: problemData.codeSnippets,
+          codeSnippets: problemData.codeSnippets,
         },
       });
       console.log(
