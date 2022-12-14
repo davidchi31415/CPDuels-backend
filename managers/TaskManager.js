@@ -132,9 +132,9 @@ class TaskManager {
             ),
           };
         }
-      } else if (platform === "AT") {
+      } else if (duel.platform === "AT") {
         // problems = await AtcoderAPI.generateProblems(duel.problemCount, usernames, duel.ratingMin, duel.ratingMax);
-      } else if (platform === "LC") {
+      } else if (duel.platform === "LC") {
         newProblems = await this.leetcodeAPI.regenerateProblems(
           duel.problemCount,
           unwantedProblems,
