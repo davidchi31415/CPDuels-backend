@@ -643,7 +643,6 @@ class CodeforcesAPI {
         }
         let actualBinWidth = currMax - currMin + 1; // Accounts for extra from remainder of problems
         for (let j = 0; j < actualBinWidth; j++) {
-          ) {
           // Skip if not unwanted problem index
           if (
             unwantedIndices?.length &&
