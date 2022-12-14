@@ -52,13 +52,13 @@ const io = new Server(
 );
 export default db;
 
-// const socketManager = new SocketManager(io);
-// await socketManager.init();
+const socketManager = new SocketManager(io);
+await socketManager.init();
 
-const api = new LeetcodeAPI();
-await api.init();
-await api.puppeteerSubmitProblem("two-sum", "Two Sum", 1, "int main() {}", "cpp", 'hgonf', "ejfwoilds");
-await api.puppeteerSubmitProblem("two-sum", "Two Sum", 2, "int main() {}", "cpp", 'hgongesdff', "ejfwolds");
+// const api = new LeetcodeAPI();
+// await api.init();
+// await api.puppeteerSubmitProblem("two-sum", "Two Sum", 1, "int main() {}", "cpp", 'hgonf', "ejfwoilds");
+// await api.puppeteerSubmitProblem("two-sum", "Two Sum", 2, "int main() {}", "cpp", 'hgongesdff', "ejfwolds");
 
 // await leetcodeLogin();
 // await leetcodeSubmit();  
