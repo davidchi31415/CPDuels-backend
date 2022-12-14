@@ -390,7 +390,6 @@ class LeetcodeAPI {
         currMin = currMax + 1;
       }
     }
-    console.log(problems);
     return problems;
   }
 
@@ -399,6 +398,7 @@ class LeetcodeAPI {
     max = Math.floor(max);
     let indexOverMin = Math.floor(Math.random() * (max - min)); // [0, max-min) because we don't want to include the last index
     let returnIndex = indexOverMin + min; // Get amount over min to index
+    console.log(returnIndex, max);
     return returnIndex;
   }
 
