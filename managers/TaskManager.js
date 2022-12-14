@@ -175,6 +175,7 @@ class TaskManager {
         }
       );
     } catch (e) {
+      console.log("Could not regen duel problems: ", e);
       await duelModel.findOneAndUpdate(
         { _id: duel._id },
         {
