@@ -105,12 +105,12 @@ class LeetcodeAPI {
         let actualBinWidth = currMax - currMin + 1; // Accounts for extra from remainder of problems
         for (let j = 0; j < actualBinWidth; j++) {
           // Skip if not unwanted problem index
-          if (
-            unwantedIndices?.length &&
-            !unwantedIndices.includes(currMin + j)
-          ) {
-            continue;
-          }
+          // if (
+          //  unwantedIndices?.length &&
+          //  !unwantedIndices.includes(currMin + j)
+          //) {
+          //  continue;
+          //}
           // Divide into sections to ensure distinct problems
           let randomIndex = LeetcodeAPI.getRandomIndex(
             (j * ratedProblems.length) / actualBinWidth,
