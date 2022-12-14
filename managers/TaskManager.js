@@ -42,7 +42,7 @@ class TaskManager {
     } else if (platform === "AT") {
     } else {
       // base is 500 points, add 300 points per level above
-      return 500 + problemRating * 300;
+      return 500 + (problemRating - duelRatingMin) * 300
     }
   }
 
@@ -147,7 +147,7 @@ class TaskManager {
             ...newProblems[i],
             duelPoints: this.calculateProblemPoints(
               duel.platform,
-              newProblems[i].rating,
+              newProblems[i].difficulty,
               duel.ratingMin
             ),
           };
