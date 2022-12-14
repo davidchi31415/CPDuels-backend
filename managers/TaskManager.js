@@ -87,7 +87,7 @@ class TaskManager {
           },
           duelPoints: this.calculateProblemPoints(
             duel.platform,
-            problems[i].rating,
+            problems[i].difficulty,
             duel.ratingMin
           ),
         };
