@@ -3,7 +3,276 @@ import { sleep } from "../helpers/sleep.js";
 import fetch from "node-fetch";
 import ql from "superagent-graphql";
 import db from "../../server.js";
+import puppeteer from "puppeteer-extra";
+import { executablePath } from "puppeteer";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
+import circularArray from "../helpers/circularArray.js";
+import clipboardy from "clipboardy";
+import { submissionModel } from "../../models/models.js";
+
+puppeteer.use(StealthPlugin());
+
 class LeetcodeAPI {
+
+  constructor() {
+    this.loginInfo = new circularArray([
+      ["cpduels-bot", "davidandjeffrey!1"],
+      // ["cpduels-bot2", "davidandjeffrey"],
+      // ["cpduels-bot3", "davidandjeffrey"],
+      // ["cpduels-bot4", "davidandjeffrey"],
+      // ["cpduels-bot5", "davidandjeffrey"],
+      // ["cpduels-bot6", "davidandjeffrey"],
+      // ["cpduels-bot7", "davidandjeffrey"],
+      // ["cpduels-bot8", "davidandjeffrey"],
+      // ["cpduels-bot9", "davidandjeffrey"],
+      // ["cpduels-bot10", "davidandjeffrey"],
+    ]);
+
+    // Submitting
+    this.currentSubmitBrowser = false;
+    this.currentSubmitPage = false;
+    this.loggedIn = false;
+    this.currentSubmissionCount = 0;
+    this.lastLoginTime = false;
+    this.currentAccount = ""; // not logged in
+  }
+
+  async init() {
+    await this.puppeteerLogin();
+  }
+
+  ///////////////////////////////////////////////////////////
+  // Submitting
+  async ensureSubmitBrowser() {
+    if (this.currentSubmitBrowser) return;
+    this.currentSubmitBrowser = await puppeteer.launch({
+      args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
+      headless: false,
+      ignoreHTTPSErrors: true,
+      executablePath: executablePath(),
+    });
+  }
+
+  async ensureLoggedIn() {
+    if (this.loggedIn) return;
+    await this.puppeteerLogin();
+  }
+
+  async puppeteerLogin() {
+    try {
+      await this.ensureSubmitBrowser();
+      const page = await this.currentSubmitBrowser.newPage();
+      page.setDefaultTimeout(8000); // 8 second timeout
+      await page.setRequestInterception(true);
+      page.on("request", (request) => {
+        if (request.resourceType() === "image") request.abort();
+        else request.continue();
+      });
+      await page.goto("https://leetcode.com/accounts/login/", {
+        waitUntil: "domcontentloaded",
+      });
+      let login = this.loginInfo.getCurAndUpdate();
+      await page.waitForSelector("input[name=login]");
+      await page.type("input[name=login]", login[0]);
+      await page.waitForSelector("input[name=password]");
+      await page.type("input[name=password]", login[1]);
+      await page.waitForSelector("button[id=signin_btn]");
+      await page.evaluate(() => {
+        [...document.querySelectorAll('span')].find(element => element.innerHTML === 'Sign In').click();
+      });
+      try {
+        // Successful login
+        await page.waitForFunction("window.location.pathname == '/'")
+        console.log(`Logged in to Leetcode account: ${login[0]}.`);
+        this.lastLoginTime = Date.now();
+        this.loggedIn = true;
+        this.currentAccount = login[0];
+      } catch {
+        // Failed to login
+        console.log(
+          `Could not login with account ${login[0]}: trying with next account`
+        );
+        await this.switchAccounts();
+      }
+    } catch (err) {
+      console.log("Login Error: ", err);
+      try {
+        await this.currentSubmitBrowser.close();
+      } catch (err) {
+        console.log("Couldn't close submit broswer: ", err);
+      }
+      this.loggedIn = false;
+      this.currentSubmitBrowser = false;
+      this.currentSubmitPage = false;
+      await this.puppeteerLogin();
+    }
+  }
+
+  async logout() {
+    try {
+      await this.currentSubmitBrowser.close();
+    } catch (err) {
+      console.log("Couldn't close submit browser.");
+    }
+    this.currentSubmitBrowser = false;
+    this.currentSubmitPage = false;
+    this.currentSubmissionCount = 0;
+    this.loggedIn = false;
+    console.log(`Logged out of account ${this.currentAccount}.`);
+    this.currentAccount = "";
+  }
+
+  async switchAccounts() {
+    console.log("Switching accounts.");
+    await this.logout();
+    await this.puppeteerLogin();
+  }
+
+  checkIfLogoutNecessary() {
+    if (!this.lastLoginTime || !this.currentSubmitBrowser) return false;
+    if (this.currentSubmissionCount >= 20) return true;
+    return false;
+  }
+
+  async puppeteerSubmitProblem(
+    slug,
+    problemName,
+    problemNumber,
+    sourceCode,
+    lang, // string
+    duelId,
+    uid
+  ) {
+    try {
+      let commentedsourceCode = `${sourceCode}`;
+      await this.ensureLoggedIn();
+      if (!this.currentSubmitBrowser) {
+        console.log(
+          `Submitting solution for ${slug} Failed: \n Could not open Puppeteer.`
+        );
+        return [
+          false,
+          `Submitting solution for ${slug} Failed: \n Could not open Puppeteer.`,
+        ];
+      }
+      if (!this.currentSubmitPage) {
+        this.currentSubmitPage = await this.currentSubmitBrowser.newPage();
+        await this.currentSubmitPage.setDefaultTimeout(8000);
+        await this.currentSubmitPage.setRequestInterception(true);
+        this.currentSubmitPage.on("request", (request) => {
+          if (request.resourceType() === "image") request.abort();
+          else request.continue();
+        });
+        this.currentSubmitPage.on('response', async (response) => {
+          if (response.url().includes("submit")) {
+            let content = await response.json();
+            let re = /problems\/([\s\S]*?)\/submit/;
+            let slug = response.url().match(re)[1];
+            let submissionId = content.submission_id;
+            console.log("Leetcode Submission Id Retreived: ", submissionId);
+            await submissionModel.create(
+              {
+                platform: "LC",
+                problemName: problemName,
+                problemNumber: problemNumber,
+                url: `https://www.leetcode.com/problems/${slug}/submissions/${submissionId}`,
+                duelId: duelId,
+                uid: uid,
+                submissionId: submissionId,
+                status: ["PENDING"],
+              }
+            );
+          }
+        });
+      }
+      await this.currentSubmitPage.goto(
+        `https://leetcode.com/problems/${slug}/`,
+        {
+          waitUntil: "networkidle2",
+        }
+      );
+      
+      await this.currentSubmitPage.evaluate(
+        () => document.querySelector('#editor button').click()
+      );
+      await this.currentSubmitPage.evaluate(
+        () => [...document.querySelectorAll('#editor li div')].find(element => element.innerHTML === "Python").click()
+      );
+      await clipboardy.writeSync(sourceCode);
+      await this.currentSubmitPage.click(".monaco-editor");
+      await this.currentSubmitPage.keyboard.down('Control');
+      await this.currentSubmitPage.keyboard.press('A');
+      await this.currentSubmitPage.keyboard.up('Control');
+      await this.currentSubmitPage.keyboard.down('Control');
+      await this.currentSubmitPage.keyboard.down('Shift');
+      await this.currentSubmitPage.keyboard.press('KeyV');
+      await this.currentSubmitPage.keyboard.up('Control');
+      await this.currentSubmitPage.keyboard.up('Shift')
+      await this.currentSubmitPage.evaluate(
+        () => [...document.querySelectorAll('button')].find(element => element.innerHTML === "Submit").click()
+      );
+      this.currentSubmissionCount++;
+      let submissionId;
+      // try {
+      //   // Solution successfully submitted
+      //   await this.currentSubmitPage.waitForSelector('a[title="Source"]');
+      //   submissionId = await this.currentSubmitPage.evaluate(
+      //     () => document.querySelector('a[title="Source"]').innerHTML
+      //   );
+      //   console.log(`CF Submission Id retrieved: ${submissionId}`);
+      //   await submissionModel.create({
+      //     platform: "CF",
+      //     problemName: problemName,
+      //     problemNumber: problemNumber,
+      //     url: `https://www.codeforces.com/contest/${contestId}/submission/${submissionId}`,
+      //     duelId: duelId,
+      //     uid: uid,
+      //     submissionId: submissionId,
+      //     status: ["PENDING"],
+      //   });
+      // } catch (e) {
+      //   // Solution failed to submit
+      //   console.log(
+      //     `Submitting solution failed with account ${this.currentAccount}: \n ${e} \n Switching accounts and resubmitting`
+      //   );
+      //   await this.switchAccounts();
+      //   return await this.puppeteerSubmitProblem(
+      //     slug,
+      //     problemName,
+      //     problemNumber,
+      //     sourceCode,
+      //     lang,
+      //     duelId,
+      //     uid
+      //   );
+      // }
+      // console.log(
+      //   `Solution for ${contestId}${problemIndex} submitted successfully.`
+      // );
+      // if (this.checkIfLogoutNecessary()) await this.switchAccounts();
+      // return [true, submissionId];
+    } catch (err) {
+      console.log("Submit Error: ", err);
+      try {
+        await this.currentSubmitBrowser.close();
+      } catch (err) {
+        console.log("Couldn't close submit broswer: ", err);
+      }
+      this.loggedIn = false;
+      this.currentSubmitBrowser = false;
+      this.currentSubmitPage = false;
+      await this.puppeteerSubmitProblem(
+        slug,
+        problemName,
+        problemNumber,
+        sourceCode,
+        lang,
+        duelId,
+        uid
+      );
+    }
+  }
+
   ///////////////////////////////////////////////////////////
   // Duels
   static checkDuelParams(ratingMin, ratingMax) {
