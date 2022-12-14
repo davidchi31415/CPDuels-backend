@@ -41,7 +41,8 @@ class TaskManager {
       return problemRating - duelRatingMin + 500;
     } else if (platform === "AT") {
     } else {
-      // Leetcode
+      // base is 500 points, add 300 points per level above
+      return 500 + problemRating * 300;
     }
   }
 
