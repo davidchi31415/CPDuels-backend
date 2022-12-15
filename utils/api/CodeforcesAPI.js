@@ -311,27 +311,30 @@ class CodeforcesAPI {
         console.log(
           `Submitting solution failed with account ${this.currentAccount}: \n ${e} \n Investigating...`
         );
-        await this.currentSubmitPage.waitForSelector(".error.for__source");
-        let errorMessage = await this.currentSubmitPage.evaluate(
-          () => document.querySelector(".error.for__source")?.innerHTML
-        );
-        console.log(errorMessage);
-        if (!errorMessage) {
-          console.log("Reason not found. Switching accounts and retrying.");
-          await this.switchAccounts();
-          return await this.puppeteerSubmitProblem(
-            contestId,
-            problemIndex,
-            problemName,
-            problemNumber,
-            sourceCode,
-            programTypeId,
-            duelId,
-            uid
+        let errorMessage;
+        try {
+          await this.currentSubmitPage.waitForSelector(".error.for__source");
+          errorMessage = await this.currentSubmitPage.evaluate(
+            () => document.querySelector(".error.for__source")?.innerHTML
           );
-        }
-        console.log("Reason: ", errorMessage);
-        return [false, errorMessage];
+          console.log(errorMessage);
+          console.log("Reason: ", errorMessage);
+          return [false, errorMessage];
+        } catch (err2) {
+          console.log("Couldn't fetch reason.");
+        } 
+        console.log("Switching accounts and retrying.");
+        await this.switchAccounts();
+        return await this.puppeteerSubmitProblem(
+          contestId,
+          problemIndex,
+          problemName,
+          problemNumber,
+          sourceCode,
+          programTypeId,
+          duelId,
+          uid
+        );
       }
       console.log(
         `Solution for ${contestId}${problemIndex} submitted successfully.`
