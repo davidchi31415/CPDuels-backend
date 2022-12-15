@@ -23,10 +23,12 @@
     "puppeteer-extra": "^3.3.4",
     "puppeteer-extra-plugin-portal": "^3.1.0",
     "puppeteer-extra-plugin-stealth": "^2.11.1",
+    "rand-user-agent": "^1.0.94",
     "socket.io": "^4.5.3",
     "superagent": "^8.0.2",
     "superagent-graphql": "^0.1.2",
-    "superagent-proxy": "^3.0.0"
+    "superagent-proxy": "^3.0.0",
+    "user-agents": "^1.0.1230"
   },
   "devDependencies": {
     "nodemon": "^2.0.20"

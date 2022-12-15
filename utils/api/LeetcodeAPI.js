@@ -10,6 +10,7 @@ import circularArray from "../helpers/circularArray.js";
 import clipboardy from "clipboardy";
 import { submissionModel } from "../../models/models.js";
 import { headless } from "../../config/origins.js";
+import randUserAgent from "rand-user-agent";
 
 puppeteer.use(StealthPlugin());
 
@@ -49,6 +50,7 @@ class LeetcodeAPI {
 		try {
 			await this.ensureSubmitBrowser();
 			const page = await this.currentSubmitBrowser.newPage();
+      await page.setUserAgent(randUserAgent("desktop", "linux", "chrome"));
 			page.setDefaultTimeout(8000); // 8 second timeout
 			await page.setRequestInterception(true);
 			page.on("request", (request) => {
