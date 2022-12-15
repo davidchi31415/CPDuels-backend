@@ -187,7 +187,7 @@ class SocketManager {
               io.emit("problem-submitted-error", {
                 roomId: roomId,
                 uid: uid,
-                message: "Could not submit. Try again.",
+                message: submitted[1] ? submitted[1] : "Could not submit. Try again.",
               });
             }
           } else {
@@ -335,7 +335,7 @@ class SocketManager {
             item.status,
             item.createdAt
           );
-          io.emit("submission-change", { duelId: item.duelId });
+          this.io.emit("submission-change", { duelId: item.duelId });
         }
       }
       let updatedLCSubmissions = await this.leetcodeAPI.updateSubmissions();
@@ -348,7 +348,7 @@ class SocketManager {
             item.status,
             item.createdAt
           );
-          io.emit("submission-change", { duelId: item.duelId });
+          this.io.emit("submission-change", { duelId: item.duelId });
         }
       }
     }

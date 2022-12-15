@@ -9,6 +9,7 @@ import { executablePath } from "puppeteer";
 import PortalPlugin from "puppeteer-extra-plugin-portal";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import { submissionModel } from "../../models/models.js";
+import { headless } from "../../config/origins.js";
 
 puppeteer.use(StealthPlugin());
 
@@ -131,7 +132,7 @@ class CodeforcesAPI {
     if (this.currentSubmitBrowser) return;
     this.currentSubmitBrowser = await puppeteer.launch({
       args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
-      headless: true,
+      headless: headless,
       ignoreHTTPSErrors: true,
       executablePath: executablePath(),
     });
@@ -288,7 +289,7 @@ class CodeforcesAPI {
       let submissionId;
       try {
         // Solution successfully submitted
-        await this.currentSubmitPage.waitForSelector('a[title="Source"]');
+        await this.currentSubmitPage.waitForSelector('a[title="Source"]', { timeout: 3000 });
         submissionId = await this.currentSubmitPage.evaluate(
           () => document.querySelector('a[title="Source"]').innerHTML
         );
@@ -306,19 +307,29 @@ class CodeforcesAPI {
       } catch (e) {
         // Solution failed to submit
         console.log(
-          `Submitting solution failed with account ${this.currentAccount}: \n ${e} \n Switching accounts and resubmitting`
+          `Submitting solution failed with account ${this.currentAccount}: \n ${e} \n Investigating...`
         );
-        await this.switchAccounts();
-        return await this.puppeteerSubmitProblem(
-          contestId,
-          problemIndex,
-          problemName,
-          problemNumber,
-          sourceCode,
-          programTypeId,
-          duelId,
-          uid
+        await this.currentSubmitPage.waitForSelector(".error.for__source");
+        let errorMessage = await this.currentSubmitPage.evaluate(
+          () => document.querySelector(".error.for__source")?.innerHTML
         );
+        console.log(errorMessage);
+        if (!errorMessage) {
+          console.log("Reason not found. Switching accounts and retrying.");
+          await this.switchAccounts();
+          return await this.puppeteerSubmitProblem(
+            contestId,
+            problemIndex,
+            problemName,
+            problemNumber,
+            sourceCode,
+            programTypeId,
+            duelId,
+            uid
+          );
+        }
+        console.log("Reason: ", errorMessage);
+        return [false, errorMessage];
       }
       console.log(
         `Solution for ${contestId}${problemIndex} submitted successfully.`
