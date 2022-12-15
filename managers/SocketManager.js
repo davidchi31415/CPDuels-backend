@@ -322,7 +322,7 @@ class SocketManager {
 
   async init() {
     await this.codeforcesAPI.init();
-    await this.leetcodeAPI.init();
+    // await this.leetcodeAPI.init();
     while (true) {
       await sleep(1000);
       let updatedCFSubmissions = await this.codeforcesAPI.updateSubmissions();
@@ -338,19 +338,19 @@ class SocketManager {
           this.io.emit("submission-change", { duelId: item.duelId });
         }
       }
-      let updatedLCSubmissions = await this.leetcodeAPI.updateSubmissions();
-      if (updatedLCSubmissions?.length) {
-        for (const item of updatedLCSubmissions) {
-          await this.duelManager.updateProblem(
-            item.duelId,
-            item.uid,
-            item.problemNumber,
-            item.status,
-            item.createdAt
-          );
-          this.io.emit("submission-change", { duelId: item.duelId });
-        }
-      }
+      // let updatedLCSubmissions = await this.leetcodeAPI.updateSubmissions();
+      // if (updatedLCSubmissions?.length) {
+      //   for (const item of updatedLCSubmissions) {
+      //     await this.duelManager.updateProblem(
+      //       item.duelId,
+      //       item.uid,
+      //       item.problemNumber,
+      //       item.status,
+      //       item.createdAt
+      //     );
+      //     this.io.emit("submission-change", { duelId: item.duelId });
+      //   }
+      // }
     }
   }
 
