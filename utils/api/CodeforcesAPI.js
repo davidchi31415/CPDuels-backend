@@ -9,7 +9,6 @@ import { executablePath } from "puppeteer";
 import PortalPlugin from "puppeteer-extra-plugin-portal";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import { submissionModel } from "../../models/models.js";
-import DEBUG from "../../config/debug.js";
 
 puppeteer.use(StealthPlugin());
 
@@ -490,7 +489,7 @@ class CodeforcesAPI {
       try {
         await this.currentCheckerBrowser.close();
       } catch (err) {
-        console.log("Couldn't close checker broswer: ", err);
+        console.log("Couldn't close checker browser: ", err);
       }
       this.currentCheckerBrowser = false;
       this.currentCheckerPage = false;
@@ -511,7 +510,7 @@ class CodeforcesAPI {
       .find(
         {
           platform: "CF",
-          status: "PENDING",
+          status: {$in: ["PENDING"]},
         },
         {}
       )

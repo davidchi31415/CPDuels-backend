@@ -25,10 +25,13 @@ duelsRouter.get("/:id", getDuel, (req, res) => {
 
 // POST one duel
 duelsRouter.post("/add", async (req, res) => {
+	let numDuels = await duelModel.countDocuments()
 	let joinStatus = await DuelManager.isPlayerInDuel(req.body.players[0].uid);
 	if (joinStatus.length) {
 		res.status(400).json({ message: "Already in a duel!", url: joinStatus[0] });
-	} else {
+	} else if (numDuels > 50) {
+		res.status(400).json({ message: "Too many duels. We bouta loose all our minutes on railways :(", url: joinStatus[0] });
+	}else {
 		const duel = new duelModel(req.body);
 		console.log(req.body);
 		let validDuel = await DuelManager.isValidDuelRequest(

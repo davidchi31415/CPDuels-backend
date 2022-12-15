@@ -3,7 +3,7 @@ import { ObjectId } from "mongodb";
 import duelModel from "../models/models.js";
 import CodeforcesAPI from "../utils/api/CodeforcesAPI.js";
 import LeetcodeAPI from "../utils/api/LeetcodeAPI.js";
-import allowedOrigins from "../config/origins.js";
+import { allowedOrigins } from "../config/origins.js";
 // import languages from "./languages.js";
 
 class DuelManager {

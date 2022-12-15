@@ -9,32 +9,20 @@ import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import circularArray from "../helpers/circularArray.js";
 import clipboardy from "clipboardy";
 import { submissionModel } from "../../models/models.js";
+import { headless } from "../../config/origins.js";
 
 puppeteer.use(StealthPlugin());
 
 class LeetcodeAPI {
 
   constructor() {
-    this.loginInfo = new circularArray([
-      ["cpduels-bot", "davidandjeffrey!1"],
-      // ["cpduels-bot2", "davidandjeffrey"],
-      // ["cpduels-bot3", "davidandjeffrey"],
-      // ["cpduels-bot4", "davidandjeffrey"],
-      // ["cpduels-bot5", "davidandjeffrey"],
-      // ["cpduels-bot6", "davidandjeffrey"],
-      // ["cpduels-bot7", "davidandjeffrey"],
-      // ["cpduels-bot8", "davidandjeffrey"],
-      // ["cpduels-bot9", "davidandjeffrey"],
-      // ["cpduels-bot10", "davidandjeffrey"],
-    ]);
+    this.loginInfo = ["cpduels-bot", "davidandjeffrey!1"];
+
+    this.loggedIn = false;
 
     // Submitting
     this.currentSubmitBrowser = false;
     this.currentSubmitPage = false;
-    this.loggedIn = false;
-    this.currentSubmissionCount = 0;
-    this.lastLoginTime = false;
-    this.currentAccount = ""; // not logged in
   }
 
   async init() {
@@ -47,7 +35,7 @@ class LeetcodeAPI {
     if (this.currentSubmitBrowser) return;
     this.currentSubmitBrowser = await puppeteer.launch({
       args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
-      headless: false,
+      headless: headless,
       ignoreHTTPSErrors: true,
       executablePath: executablePath(),
     });
@@ -69,42 +57,33 @@ class LeetcodeAPI {
         else request.continue();
       });
       await page.goto("https://leetcode.com/accounts/login/", {
-        waitUntil: "domcontentloaded",
+        waitUntil: "networkidle2",
       });
-      let login = this.loginInfo.getCurAndUpdate();
-      await page.waitForSelector("input[name=login]");
-      await page.type("input[name=login]", login[0]);
-      await page.waitForSelector("input[name=password]");
-      await page.type("input[name=password]", login[1]);
-      await page.waitForSelector("button[id=signin_btn]");
+      await page.type("input[name=login]", this.loginInfo[0]);
+      await page.type("input[name=password]", this.loginInfo[1]);
       await page.evaluate(() => {
         [...document.querySelectorAll('span')].find(element => element.innerHTML === 'Sign In').click();
       });
       try {
         // Successful login
         await page.waitForFunction("window.location.pathname == '/'")
-        console.log(`Logged in to Leetcode account: ${login[0]}.`);
-        this.lastLoginTime = Date.now();
+        console.log(`Logged in to LC submit account.`);
         this.loggedIn = true;
-        this.currentAccount = login[0];
       } catch {
         // Failed to login
         console.log(
-          `Could not login with account ${login[0]}: trying with next account`
+          `Could not login to LC submit account: trying with next account`
         );
-        await this.switchAccounts();
+        await this.reLogin();
       }
     } catch (err) {
       console.log("Login Error: ", err);
       try {
         await this.currentSubmitBrowser.close();
       } catch (err) {
-        console.log("Couldn't close submit broswer: ", err);
+        console.log("Couldn't close LC submit browser: ", err);
       }
-      this.loggedIn = false;
-      this.currentSubmitBrowser = false;
-      this.currentSubmitPage = false;
-      await this.puppeteerLogin();
+      await this.reLogin();
     }
   }
 
@@ -116,22 +95,13 @@ class LeetcodeAPI {
     }
     this.currentSubmitBrowser = false;
     this.currentSubmitPage = false;
-    this.currentSubmissionCount = 0;
     this.loggedIn = false;
-    console.log(`Logged out of account ${this.currentAccount}.`);
-    this.currentAccount = "";
+    console.log(`Logged out of LC submit account.`);
   }
 
-  async switchAccounts() {
-    console.log("Switching accounts.");
+  async reLogin() {
     await this.logout();
     await this.puppeteerLogin();
-  }
-
-  checkIfLogoutNecessary() {
-    if (!this.lastLoginTime || !this.currentSubmitBrowser) return false;
-    if (this.currentSubmissionCount >= 20) return true;
-    return false;
   }
 
   async puppeteerSubmitProblem(
@@ -232,7 +202,6 @@ class LeetcodeAPI {
       console.log(
         `Solution for ${slug} submitted successfully.`
       );
-      if (this.checkIfLogoutNecessary()) await this.switchAccounts();
       return [true, submissionId];
     } catch (err) {
       console.log("Submit Error: ", err);
@@ -254,6 +223,144 @@ class LeetcodeAPI {
         uid
       );
     }
+  }
+
+  ///////////////////////////////////////////////////////////
+  // Updating Submissions
+  
+  async updateSubmissionVerdict(rawVerdict, submissionId) {
+    const verdict = rawVerdict.toUpperCase();
+    if (verdict.includes("WRONG ANSWER")) {
+      await submissionModel.findOneAndUpdate(
+        {
+          submissionId: submissionId,
+        },
+        {
+          $set: {
+            status: ["WRONG ANSWER"],
+          },
+        }
+      );
+    } else if (verdict.includes("COMPILE ERROR")) {
+      await submissionModel.findOneAndUpdate(
+        {
+          submissionId: submissionId,
+        },
+        {
+          $set: {
+            status: ["COMPILATION ERROR"],
+          },
+        }
+      );
+    } else if (verdict.includes("RUNTIME ERROR")) {
+      await submissionModel.findOneAndUpdate(
+        {
+          submissionId: submissionId,
+        },
+        {
+          $set: {
+            status: ["RUNTIME ERROR"],
+          },
+        }
+      );
+    } else if (verdict.includes("TIME LIMIT EXCEEDED")) {
+      await submissionModel.findOneAndUpdate(
+        {
+          submissionId: submissionId,
+        },
+        {
+          $set: {
+            status: ["TIME LIMIT EXCEEDED"],
+          },
+        }
+      );
+    } else if (verdict.includes("MEMORY LIMIT EXCEEDED")) {
+      await submissionModel.findOneAndUpdate(
+        {
+          submissionId: submissionId,
+        },
+        {
+          $set: {
+            status: ["MEMORY LIMIT EXCEEDED"],
+          },
+        }
+      );
+    } else if (verdict.includes("IDLENESS LIMIT EXCEEDED")) {
+      await submissionModel.findOneAndUpdate(
+        {
+          submissionId: submissionId,
+        },
+        {
+          $set: {
+            status: ["IDLENESS LIMIT EXCEEDED"],
+          },
+        }
+      );
+    } else if (verdict.includes("ACCEPTED")) {
+      await submissionModel.findOneAndUpdate(
+        {
+          submissionId: submissionId,
+        },
+        {
+          $set: {
+            status: ["ACCEPTED"],
+          },
+        }
+      );
+    } else {
+      console.log("Submission not updated: still pending.");
+    }
+  }
+
+  async updateSubmission(submission) {
+    try {
+      let verdictContent;
+      let submissionContent = await this.getSubmission(submission.submissionId);
+      verdictContent = submissionContent.statusDisplay;
+      if (!verdictContent) {
+        console.log(
+          `Could not update submission ${submissionContent.submissionId}: \n Verdict not found.`
+        );
+        return; // Don't update if verdict content is undefined
+      }
+      console.log(verdictContent);
+      await this.updateSubmissionVerdict(verdictContent, submission.id);
+    } catch (err) {
+      console.log("Check Error: ", err);
+    }
+  }
+
+  async getPendingSubmissionsFromDatabase() {
+    let result = await db
+      .collection("submissions")
+      .find(
+        {
+          platform: "LC",
+          status: {$in: ["PENDING"]},
+        },
+        {}
+      )
+      .toArray();
+    return result;
+  }
+
+  async updateSubmissions() {
+    let dbSubmissions = await this.getPendingSubmissionsFromDatabase();
+    if (!dbSubmissions.length) {
+      console.log("There are no LC sumissions to update.");
+      return false;
+    }
+    for (let i = 0; i < dbSubmissions.length; i++) {
+      await this.updateSubmission(dbSubmissions[i]);
+    }
+    let updatedSubmissions = [];
+    // for (const item of dbSubmissions) {
+    //   let res = await submissionModel.findOne({
+    //     submissionId: item.submissionId,
+    //   });
+    //   updatedSubmissions.push(res);
+    // }
+    return updatedSubmissions;
   }
 
   ///////////////////////////////////////////////////////////
@@ -443,6 +550,42 @@ class LeetcodeAPI {
       console.log(e);
       return false;
     }
+  }
+
+  async getSubmission(id) {
+    let submissions = await this.getRecentSubmissionList();
+    for (let submission of submissions) {
+      if (submission.id === id) {
+        return submission;
+      }
+    }
+    return false;
+  }
+
+  async getRecentSubmissionList() {
+    let queryString = `
+		  query getRecentSubmissionList($username: String!) {
+        recentSubmissionList(username: $username) {
+          id
+          title
+          titleSlug
+          timestamp
+				  runtime
+          statusDisplay
+				  isPending
+          lang
+				  url
+        }
+      }`;
+
+    let queryVars = {
+	    username: "cpduels-bot",
+    };
+
+    let res = await superagent
+	    .get("https://leetcode.com/graphql")
+	    .use(ql(queryString, queryVars));
+    return JSON.parse(res.text).data.recentSubmissionList;
   }
 
   async getProblem(titleSlug) {

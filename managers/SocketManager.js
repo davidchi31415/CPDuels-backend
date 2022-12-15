@@ -3,34 +3,20 @@ import TaskManager from "./TaskManager.js";
 import CodeforcesAPI from "../utils/api/CodeforcesAPI.js";
 import LeetcodeAPI from "../utils/api/LeetcodeAPI.js";
 import duelModel, { submissionModel } from "../models/models.js";
+import { sleep } from "../utils/helpers/sleep.js";
 
 class SocketManager {
   constructor(io) {
     this.codeforcesAPI = new CodeforcesAPI();
     this.leetcodeAPI = new LeetcodeAPI();
     const taskManager = new TaskManager(this.codeforcesAPI, this.leetcodeAPI);
-    const duelManager = new DuelManager(
+    this.duelManager = new DuelManager(
       this.codeforcesAPI,
       this.leetcodeAPI,
       taskManager
     );
     this.timers = {};
     // taskManager.init();
-    setInterval(async () => {
-      let updatedCFSubmissions = await this.codeforcesAPI.updateSubmissions();
-      if (updatedCFSubmissions?.length) {
-        for (const item of updatedCFSubmissions) {
-          await duelManager.updateProblem(
-            item.duelId,
-            item.uid,
-            item.problemNumber,
-            item.status,
-            item.createdAt
-          );
-          io.emit("submission-change", { duelId: item.duelId });
-        }
-      }
-    }, 10000);
     this.io = io;
     io.on("connection", async (socket) => {
       socket.on("join", (roomId) => {
@@ -43,18 +29,18 @@ class SocketManager {
 						message: "Already in a duel!", url: joinStatus[0],
 					});
 				} else {
-          let duel = await duelManager.getDuel(roomId);
+          let duel = await this.duelManager.getDuel(roomId);
           let duelState = duel.status;
           if (duelState === "WAITING") {
             console.log(username + " Wants to Join Duel " + roomId);
-            let validJoin = await duelManager.isValidJoinRequest(
+            let validJoin = await this.duelManager.isValidJoinRequest(
               roomId,
               username,
               guest
             );
             if (validJoin[0]) {
-              await duelManager.addDuelPlayer(roomId, username, guest, uid);
-              await duelManager.initializeDuel(roomId);
+              await this.duelManager.addDuelPlayer(roomId, username, guest, uid);
+              await this.duelManager.initializeDuel(roomId);
               io.emit("status-change", {
                 roomId: roomId,
                 newStatus: "INITIALIZED",
@@ -65,11 +51,15 @@ class SocketManager {
                 message: validJoin[1],
               });
             }
+          } else {
+            io.to(socket.id).emit("join-duel-error", {
+              message: "This duel cannot be joined."
+            });
           }
         }
       });
       socket.on("player-ready", async ({ roomId, uid }) => {
-        let duel = await duelManager.getDuel(roomId);
+        let duel = await this.duelManager.getDuel(roomId);
         if (duel.regeneratingProblems) return; // Do not allow duel to begin while regenerating problems.
         let playerNum;
         for (let i = 0; i < duel.players.length; i++) {
@@ -87,12 +77,12 @@ class SocketManager {
             }
           );
           io.emit("player-ready-changed", { roomId });
-          let duelReady = await duelManager.getDuelReadyStatus(roomId);
+          let duelReady = await this.duelManager.getDuelReadyStatus(roomId);
           if (duelReady) {
             let timeLimit = duel.timeLimit;
             const startTime = new Date();
             const maxTime = timeLimit * 60000; // minutes to milliseconds
-            await duelManager.startDuel(roomId);
+            await this.duelManager.startDuel(roomId);
 
             console.log("Yo here we go again");
             io.emit("status-change", {
@@ -111,7 +101,7 @@ class SocketManager {
                 this.timers[roomId],
                 roomId,
                 io,
-                duelManager
+                this.duelManager
               );
               io.emit("time-left", {
                 roomId: roomId,
@@ -123,7 +113,7 @@ class SocketManager {
       });
 
       socket.on("player-unready", async ({ roomId, uid }) => {
-        let duel = await duelManager.getDuel(roomId);
+        let duel = await this.duelManager.getDuel(roomId);
         let playerNum;
         for (let i = 0; i < duel.players.length; i++) {
           if (duel.players[i].uid === uid) playerNum = i + 1;
@@ -154,7 +144,7 @@ class SocketManager {
       );
       socket.on("regenerate-problems", async ({ roomId, problemIndices }) => {
         // regenerate problem with array of problemNumbers
-        let duel = await duelManager.getDuel(roomId);
+        let duel = await this.duelManager.getDuel(roomId);
         console.log(roomId);
         io.emit("regenerate-problems-received", { roomId });
         await taskManager.regenerateProblems(duel, problemIndices);
@@ -166,7 +156,7 @@ class SocketManager {
         );
         try {
           console.log(roomId);
-          let duel = await duelManager.getDuel(roomId);
+          let duel = await this.duelManager.getDuel(roomId);
           let validDuel = duel.status === "ONGOING";
           if (!validDuel) {
             io.emit("problem-submitted-error", {
@@ -183,7 +173,7 @@ class SocketManager {
             }
           }
           if (validPlayer) {
-            let submitted = await duelManager.submitProblem(
+            let submitted = await this.duelManager.submitProblem(
               roomId,
               uid,
               submission
@@ -216,7 +206,7 @@ class SocketManager {
         console.log(`Duel ${roomId}, player with uid ${uid} is aborting duel.`);
 
         try {
-          let duel = await duelManager.getDuel(roomId);
+          let duel = await this.duelManager.getDuel(roomId);
           let validDuel =
             duel.status === "WAITING" ||
             duel.status === "READY" ||
@@ -234,7 +224,7 @@ class SocketManager {
             if (duel.players[i].uid === uid) validPlayer = true;
           }
           if (validPlayer) {
-            await duelManager.abortDuel(roomId);
+            await this.duelManager.abortDuel(roomId);
             if (this.timers[roomId]) clearInterval(this.timers[roomId]);
             io.emit("status-change", {
               roomId: roomId,
@@ -257,7 +247,7 @@ class SocketManager {
           `Duel ${roomId}, player with uid ${uid} is resigning duel.`
         );
         try {
-          let duel = await duelManager.getDuel(roomId);
+          let duel = await this.duelManager.getDuel(roomId);
           let validDuel = duel.status === "ONGOING";
           if (!validDuel) {
             io.emit("resign-duel-error", {
@@ -272,7 +262,7 @@ class SocketManager {
             if (duel.players[i].uid === uid) validPlayer = true;
           }
           if (validPlayer) {
-            await duelManager.resignDuel(roomId, uid);
+            await this.duelManager.resignDuel(roomId, uid);
             if (this.timers[roomId]) clearInterval(this.timers[roomId]);
             io.emit("status-change", {
               roomId: roomId,
@@ -293,7 +283,7 @@ class SocketManager {
       socket.on("message-send", async ({ roomId, uid, message }) => {
         try {
           let valid = false;
-          let duel = await duelManager.getDuel(roomId);
+          let duel = await this.duelManager.getDuel(roomId);
           for (let i = 0; i < duel.players.length; i++) {
             if (duel.players[i].uid === uid) {
               valid = true;
@@ -333,15 +323,44 @@ class SocketManager {
   async init() {
     await this.codeforcesAPI.init();
     await this.leetcodeAPI.init();
+    while (true) {
+      await sleep(10000);
+      let updatedCFSubmissions = await this.codeforcesAPI.updateSubmissions();
+      if (updatedCFSubmissions?.length) {
+        for (const item of updatedCFSubmissions) {
+          await this.duelManager.updateProblem(
+            item.duelId,
+            item.uid,
+            item.problemNumber,
+            item.status,
+            item.createdAt
+          );
+          io.emit("submission-change", { duelId: item.duelId });
+        }
+      }
+      let updatedLCSubmissions = await this.leetcodeAPI.updateSubmissions();
+      if (updatedLCSubmissions?.length) {
+        for (const item of updatedLCSubmissions) {
+          await this.duelManager.updateProblem(
+            item.duelId,
+            item.uid,
+            item.problemNumber,
+            item.status,
+            item.createdAt
+          );
+          io.emit("submission-change", { duelId: item.duelId });
+        }
+      }
+    }
   }
 
   async getTimeLeft(startTime, maxTime, timeInterval, roomId, io, duelManager) {
-    let finishStatus = await duelManager.getDuelFinishStatus(roomId);
+    let finishStatus = await this.duelManager.getDuelFinishStatus(roomId);
     const curTime = new Date();
     let timeDifference = Math.abs(curTime.getTime() - startTime.getTime());
     if (timeDifference >= maxTime || finishStatus) {
       if (timeInterval) clearInterval(timeInterval);
-      await duelManager.finishDuel(roomId);
+      await this.duelManager.finishDuel(roomId);
       io.emit("status-change", {
         roomId: roomId,
         newStatus: "FINISHED",

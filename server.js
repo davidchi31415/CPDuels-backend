@@ -4,7 +4,7 @@ import duelsRouter from "./routes/duelsRouter.js";
 import cfproblemsRouter from "./routes/cfproblemsRouter.js";
 import lcproblemsRouter from "./routes/lcproblemsRouter.js";
 import { Server } from "socket.io";
-import allowedOrigins from "./config/origins.js";
+import { allowedOrigins } from "./config/origins.js";
 import { sleep } from "./utils/helpers/sleep.js";
 import cors from "cors";
 import SocketManager from "./managers/SocketManager.js";
