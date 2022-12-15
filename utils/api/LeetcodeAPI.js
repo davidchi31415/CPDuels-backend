@@ -163,27 +163,6 @@ class LeetcodeAPI {
           if (request.resourceType() === "image") request.abort();
           else request.continue();
         });
-        this.currentSubmitPage.on('response', async (response) => {
-          if (response.url().includes("submit")) {
-            let content = await response.json();
-            let re = /problems\/([\s\S]*?)\/submit/;
-            let slug = response.url().match(re)[1];
-            let submissionId = content.submission_id;
-            console.log("Leetcode Submission Id Retreived: ", submissionId);
-            await submissionModel.create(
-              {
-                platform: "LC",
-                problemName: problemName,
-                problemNumber: problemNumber,
-                url: `https://www.leetcode.com/problems/${slug}/submissions/${submissionId}`,
-                duelId: duelId,
-                uid: uid,
-                submissionId: submissionId,
-                status: ["PENDING"],
-              }
-            );
-          }
-        });
       }
       await this.currentSubmitPage.goto(
         `https://leetcode.com/problems/${slug}/`,
@@ -191,7 +170,6 @@ class LeetcodeAPI {
           waitUntil: "networkidle2",
         }
       );
-      
       await this.currentSubmitPage.evaluate(
         () => document.querySelector('#editor button').click()
       );
@@ -213,44 +191,49 @@ class LeetcodeAPI {
       );
       this.currentSubmissionCount++;
       let submissionId;
-      // try {
-      //   // Solution successfully submitted
-      //   await this.currentSubmitPage.waitForSelector('a[title="Source"]');
-      //   submissionId = await this.currentSubmitPage.evaluate(
-      //     () => document.querySelector('a[title="Source"]').innerHTML
-      //   );
-      //   console.log(`CF Submission Id retrieved: ${submissionId}`);
-      //   await submissionModel.create({
-      //     platform: "CF",
-      //     problemName: problemName,
-      //     problemNumber: problemNumber,
-      //     url: `https://www.codeforces.com/contest/${contestId}/submission/${submissionId}`,
-      //     duelId: duelId,
-      //     uid: uid,
-      //     submissionId: submissionId,
-      //     status: ["PENDING"],
-      //   });
-      // } catch (e) {
-      //   // Solution failed to submit
-      //   console.log(
-      //     `Submitting solution failed with account ${this.currentAccount}: \n ${e} \n Switching accounts and resubmitting`
-      //   );
-      //   await this.switchAccounts();
-      //   return await this.puppeteerSubmitProblem(
-      //     slug,
-      //     problemName,
-      //     problemNumber,
-      //     sourceCode,
-      //     lang,
-      //     duelId,
-      //     uid
-      //   );
-      // }
-      // console.log(
-      //   `Solution for ${contestId}${problemIndex} submitted successfully.`
-      // );
-      // if (this.checkIfLogoutNecessary()) await this.switchAccounts();
-      // return [true, submissionId];
+      try {
+        // Solution successfully submitted
+        const submissionResponse = await this.currentSubmitPage.waitForResponse(
+          response => response.url().includes("submit")
+        );
+        let submissionResponseContent = await submissionResponse.json();
+        let re = /problems\/([\s\S]*?)\/submit/;
+        let slug = submissionResponse.url().match(re)[1];
+        submissionId = submissionResponseContent.submission_id;
+        console.log("Leetcode Submission Id Retreived: ", submissionId);
+        await submissionModel.create(
+          {
+            platform: "LC",
+            problemName: problemName,
+            problemNumber: problemNumber,
+            url: `https://www.leetcode.com/problems/${slug}/submissions/${submissionId}`,
+            duelId: duelId,
+            uid: uid,
+            submissionId: submissionId,
+            status: ["PENDING"],
+          }
+        );
+      } catch (e) {
+        // Solution failed to submit
+        console.log(
+          `Submitting solution failed with account ${this.currentAccount}: \n ${e} \n Switching accounts and resubmitting`
+        );
+        await this.switchAccounts();
+        return await this.puppeteerSubmitProblem(
+          slug,
+          problemName,
+          problemNumber,
+          sourceCode,
+          lang,
+          duelId,
+          uid
+        );
+      }
+      console.log(
+        `Solution for ${slug} submitted successfully.`
+      );
+      if (this.checkIfLogoutNecessary()) await this.switchAccounts();
+      return [true, submissionId];
     } catch (err) {
       console.log("Submit Error: ", err);
       try {
@@ -307,7 +290,6 @@ class LeetcodeAPI {
     unwantedIndices
   ) {
     let numBins = ratingMax - ratingMin + 1; // Number of rating bins
-    console.log(numProblems, numBins);
     let problems = [];
     if (numProblems <= numBins) {
       let subwidth = Math.floor(numBins / numProblems);

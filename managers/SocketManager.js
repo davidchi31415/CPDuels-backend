@@ -37,27 +37,34 @@ class SocketManager {
         socket.join(roomId);
       });
       socket.on("join-duel", async ({ roomId, username, guest, uid }) => {
-        let duel = await duelManager.getDuel(roomId);
-        let duelState = duel.status;
-        if (duelState === "WAITING") {
-          console.log(username + " Wants to Join Duel " + roomId);
-          let validJoin = await duelManager.isValidJoinRequest(
-            roomId,
-            username,
-            guest
-          );
-          if (validJoin[0]) {
-            await duelManager.addDuelPlayer(roomId, username, guest, uid);
-            await duelManager.initializeDuel(roomId);
-            io.emit("status-change", {
-              roomId: roomId,
-              newStatus: "INITIALIZED",
-            });
-            io.emit("problem-change", { roomId: roomId });
-          } else {
-            io.to(socket.id).emit("join-duel-error", {
-              message: validJoin[1],
-            });
+        let joinStatus = await DuelManager.isPlayerInDuel(uid);
+				if (joinStatus.length) {
+					io.to(socket.id).emit("join-duel-error", {
+						message: "Already in a duel!", url: joinStatus[0],
+					});
+				} else {
+          let duel = await duelManager.getDuel(roomId);
+          let duelState = duel.status;
+          if (duelState === "WAITING") {
+            console.log(username + " Wants to Join Duel " + roomId);
+            let validJoin = await duelManager.isValidJoinRequest(
+              roomId,
+              username,
+              guest
+            );
+            if (validJoin[0]) {
+              await duelManager.addDuelPlayer(roomId, username, guest, uid);
+              await duelManager.initializeDuel(roomId);
+              io.emit("status-change", {
+                roomId: roomId,
+                newStatus: "INITIALIZED",
+              });
+              io.emit("problem-change", { roomId: roomId });
+            } else {
+              io.to(socket.id).emit("join-duel-error", {
+                message: validJoin[1],
+              });
+            }
           }
         }
       });
@@ -325,6 +332,7 @@ class SocketManager {
 
   async init() {
     await this.codeforcesAPI.init();
+    await this.leetcodeAPI.init();
   }
 
   async getTimeLeft(startTime, maxTime, timeInterval, roomId, io, duelManager) {

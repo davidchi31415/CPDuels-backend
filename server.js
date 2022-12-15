@@ -13,6 +13,7 @@ import DuelManager from "./managers/DuelManager.js";
 import TaskManager from "./managers/TaskManager.js";
 import submissionsRouter from "./routes/submissionsRouter.js";
 import messagesRouter from "./routes/messagesRouter.js";
+import genInfoRouter from "./routes/genInfoRouter.js";
 import LeetcodeAPI from "./utils/api/LeetcodeAPI.js";
 const app = express();
 var corsOptions = {
@@ -41,6 +42,7 @@ app.use("/cfproblems", cfproblemsRouter);
 app.use("/lcproblems", lcproblemsRouter);
 app.use("/submissions", submissionsRouter);
 app.use("/messages", messagesRouter);
+app.use("/general", genInfoRouter);
 const server = app.listen(PORT, () =>
   console.log(`Server is started on port ${PORT}.`)
 );
@@ -57,8 +59,6 @@ await socketManager.init();
 
 // const api = new LeetcodeAPI();
 // await api.init();
-// await api.puppeteerSubmitProblem("two-sum", "Two Sum", 1, "int main() {}", "cpp", 'hgonf', "ejfwoilds");
-// await api.puppeteerSubmitProblem("two-sum", "Two Sum", 2, "int main() {}", "cpp", 'hgongesdff', "ejfwolds");
 
 // await leetcodeLogin();
 // await leetcodeSubmit();  

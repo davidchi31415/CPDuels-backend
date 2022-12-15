@@ -9,8 +9,8 @@ const duelsRouter = express.Router();
 // GET all duels
 duelsRouter.get("/", async (req, res) => {
 	try {
-		let time = Date.now(); // await duelModel.find().lean();
-		const duels = await db.collection("duels").find({}).toArray();
+		let time = Date.now();
+		const duels = await duelModel.find().lean();
 		console.log(Date.now() - time);
 		res.send(duels);
 	} catch (err) {
@@ -25,26 +25,31 @@ duelsRouter.get("/:id", getDuel, (req, res) => {
 
 // POST one duel
 duelsRouter.post("/add", async (req, res) => {
-	const duel = new duelModel(req.body);
-	console.log(req.body);
-	let validDuel = await DuelManager.isValidDuelRequest(
-		req.body.platform,
-		req.body.players,
-		req.body.problemCount,
-		req.body.ratingMin,
-		req.body.ratingMax,
-		req.body.timeLimit
-	);
-	console.log(validDuel);
-	try {
-		if (validDuel[0]) {
-			const newDuel = await duel.save();
-			res.status(201).json(newDuel);
-		} else {
-			res.status(400).json({ message: validDuel[1] });
+	let joinStatus = await DuelManager.isPlayerInDuel(req.body.players[0].uid);
+	if (joinStatus.length) {
+		res.status(400).json({ message: "Already in a duel!", url: joinStatus[0] });
+	} else {
+		const duel = new duelModel(req.body);
+		console.log(req.body);
+		let validDuel = await DuelManager.isValidDuelRequest(
+			req.body.platform,
+			req.body.players,
+			req.body.problemCount,
+			req.body.ratingMin,
+			req.body.ratingMax,
+			req.body.timeLimit
+		);
+		console.log(validDuel);
+		try {
+			if (validDuel[0]) {
+				const newDuel = await duel.save();
+				res.status(201).json(newDuel);
+			} else {
+				res.status(400).json({ message: validDuel[1] });
+			}
+		} catch (err) {
+			res.status(400).json({ message: err.message });
 		}
-	} catch (err) {
-		res.status(400).json({ message: err.message });
 	}
 });
 

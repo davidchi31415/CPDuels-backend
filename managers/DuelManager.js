@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb";
 import duelModel from "../models/models.js";
 import CodeforcesAPI from "../utils/api/CodeforcesAPI.js";
 import LeetcodeAPI from "../utils/api/LeetcodeAPI.js";
+import allowedOrigins from "../config/origins.js";
 // import languages from "./languages.js";
 
 class DuelManager {
@@ -241,6 +242,22 @@ class DuelManager {
     }
   }
 
+  static async isPlayerInDuel(uid) {
+		let duels = await duelModel.find({
+			status: { $in: ["ONGOING", "WAITING", "INITIALIZED"] },
+		});
+    let result = [];
+		for (let duel of duels) {
+			for (let player of duel.players) {
+				if (player.uid === uid) {
+					let url = allowedOrigins + `/play/${duel._id}`;
+          result.push(url);
+        }
+			}
+		}
+		return result;
+	}
+
   ////////////////////////////////////////////////////////////////////////
   // Submitting
 
@@ -249,16 +266,31 @@ class DuelManager {
     try {
       let duel = await this.getDuel(id);
       let problem = duel.problems[parseInt(submission.number) - 1];
-      let submitted = await this.codeforcesAPI.puppeteerSubmitProblem(
-        problem.accessor.contestId,
-        problem.accessor.index,
-        problem.name,
-        submission.number,
-        submission.content,
-        submission.languageCode,
-        id,
-        uid
-      );
+      let submitted;
+      if (duel.platform === "CF") {
+        submitted = await this.codeforcesAPI.puppeteerSubmitProblem(
+          problem.accessor.contestId,
+          problem.accessor.index,
+          problem.name,
+          submission.number,
+          submission.content,
+          submission.languageCode,
+          id,
+          uid
+        );
+      } else if (duel.platform === "LC") {
+        submitted = await this.leetcodeAPI.puppeteerSubmitProblem(
+          problem.accessor.slug,
+          problem.name,
+          submission.number,
+          submission.content,
+          submission.languageCode, // String (e.g., "cpp")
+          id,
+          uid
+        );
+      } else {
+        // AtCoder
+      }
       return submitted;
     } catch (e) {
       console.log(
