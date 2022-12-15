@@ -298,6 +298,8 @@ class CodeforcesAPI {
           platform: "CF",
           problemName: problemName,
           problemNumber: problemNumber,
+          languageCode: programTypeId,
+          content: commentedsourceCode,
           url: `https://www.codeforces.com/contest/${contestId}/submission/${submissionId}`,
           duelId: duelId,
           uid: uid,

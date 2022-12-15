@@ -147,11 +147,18 @@ class LeetcodeAPI {
 			await this.currentSubmitPage.evaluate(() =>
 				document.querySelector("#editor button").click()
 			);
-			await this.currentSubmitPage.evaluate(() =>
+      let languageAvailable = await this.currentSubmitPage.evaluate((lang) => {
+        return [...document.querySelectorAll("#editor li div")].some(element => element.innerHTML === lang);
+      }, lang);
+      if (!languageAvailable) {
+        return [false, "Language not valid for this problem."];
+      }
+			await this.currentSubmitPage.evaluate((lang) =>
 				[...document.querySelectorAll("#editor li div")]
-					.find((element) => element.innerHTML === "Python")
+					.find((element) => element.innerHTML === lang)
 					.click()
-			);
+        , lang);
+      await sleep(500); // Wait for text to change
 			await clipboardy.writeSync(sourceCode);
 			await this.currentSubmitPage.click(".monaco-editor");
 			await this.currentSubmitPage.keyboard.down("Control");
@@ -184,6 +191,8 @@ class LeetcodeAPI {
 					platform: "LC",
 					problemName: problemName,
 					problemNumber: problemNumber,
+          languageCode: programTypeId,
+          content: commentedsourceCode,
 					url: `https://www.leetcode.com/problems/${slug}/submissions/${submissionId}`,
 					duelId: duelId,
 					uid: uid,
@@ -364,12 +373,12 @@ class LeetcodeAPI {
 			await this.updateSubmission(dbSubmissions[i]);
 		}
 		let updatedSubmissions = [];
-		// for (const item of dbSubmissions) {
-		//   let res = await submissionModel.findOne({
-		//     submissionId: item.submissionId,
-		//   });
-		//   updatedSubmissions.push(res);
-		// }
+		for (const item of dbSubmissions) {
+		  let res = await submissionModel.findOne({
+		    submissionId: item.submissionId,
+		  });
+		  updatedSubmissions.push(res);
+		}
 		return updatedSubmissions;
 	}
 

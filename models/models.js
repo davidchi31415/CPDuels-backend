@@ -284,6 +284,14 @@ const submissionSchema = mongoose.Schema(
       type: Number,
       required: true,
     },
+    languageCode: {
+      type: "String",
+      required: true,
+    },
+    content: {
+      type: String,
+      required: true,
+    },
     url: {
       type: String,
       required: true,

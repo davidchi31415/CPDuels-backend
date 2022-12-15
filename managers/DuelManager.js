@@ -284,7 +284,7 @@ class DuelManager {
           problem.name,
           submission.number,
           submission.content,
-          submission.languageCode, // String (e.g., "cpp")
+          submission.languageName, // String (e.g., "C++"),
           id,
           uid
         );
