@@ -233,7 +233,6 @@ class LeetcodeAPI {
 
 	async updateSubmissionVerdict(rawVerdict, submissionId) {
 		const verdict = rawVerdict.toUpperCase();
-		console.log(verdict);
 		if (verdict.includes("WRONG ANSWER")) {
 			await submissionModel.findOneAndUpdate(
 				{
