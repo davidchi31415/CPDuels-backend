@@ -152,8 +152,7 @@ class TaskManager {
             ...newProblems[i],
             platform: duel.platform,
             accessor: {
-              contestId: newProblems[i].contestId,
-              index: newProblems[i].index,
+              slug: newProblems[i].slug,
             },
             duelPoints: this.calculateProblemPoints(
               duel.platform,
