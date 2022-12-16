@@ -125,6 +125,11 @@ class TaskManager {
         for (let i = 0; i < newProblems.length; i++) {
           newProblems[i] = {
             ...newProblems[i],
+            platform: duel.platform,
+            accessor: {
+              contestId: newProblems[i].contestId,
+              index: newProblems[i].index,
+            },
             duelPoints: this.calculateProblemPoints(
               duel.platform,
               newProblems[i].rating,
@@ -145,6 +150,11 @@ class TaskManager {
         for (let i = 0; i < newProblems.length; i++) {
           newProblems[i] = {
             ...newProblems[i],
+            platform: duel.platform,
+            accessor: {
+              contestId: newProblems[i].contestId,
+              index: newProblems[i].index,
+            },
             duelPoints: this.calculateProblemPoints(
               duel.platform,
               newProblems[i].difficulty,
