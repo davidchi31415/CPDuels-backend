@@ -336,7 +336,7 @@ class SocketManager {
     await this.codeforcesAPI.init();
     // await this.leetcodeAPI.init();
     while (true) {
-      await sleep(1000);
+      await sleep(2000);
       let updatedCFSubmissions = await this.codeforcesAPI.updateSubmissions();
       if (updatedCFSubmissions?.length) {
         for (const item of updatedCFSubmissions) {
