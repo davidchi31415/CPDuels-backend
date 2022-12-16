@@ -309,32 +309,10 @@ class CodeforcesAPI {
       } catch (e) {
         // Solution failed to submit
         console.log(
-          `Submitting solution failed with account ${this.currentAccount}: \n ${e} \n Investigating...`
+          `Submitting solution failed with account ${this.currentAccount}: \n ${e}`
         );
-        let errorMessage;
-        try {
-          await this.currentSubmitPage.waitForSelector(".error.for__source");
-          errorMessage = await this.currentSubmitPage.evaluate(
-            () => document.querySelector(".error.for__source")?.innerHTML
-          );
-          console.log(errorMessage);
-          console.log("Reason: ", errorMessage);
-          return [false, errorMessage];
-        } catch (err2) {
-          console.log("Couldn't fetch reason.");
-        } 
-        console.log("Switching accounts and retrying.");
         await this.switchAccounts();
-        return await this.puppeteerSubmitProblem(
-          contestId,
-          problemIndex,
-          problemName,
-          problemNumber,
-          sourceCode,
-          programTypeId,
-          duelId,
-          uid
-        );
+        return [false, "Could not submit. Please try again."];
       }
       console.log(
         `Solution for ${contestId}${problemIndex} submitted successfully.`
@@ -343,24 +321,8 @@ class CodeforcesAPI {
       return [true, submissionId];
     } catch (err) {
       console.log("Submit Error: ", err);
-      try {
-        await this.currentSubmitBrowser.close();
-      } catch (err) {
-        console.log("Couldn't close submit broswer: ", err);
-      }
-      this.loggedIn = false;
-      this.currentSubmitBrowser = false;
-      this.currentSubmitPage = false;
-      await this.puppeteerSubmitProblem(
-        contestId,
-        problemIndex,
-        problemName,
-        problemNumber,
-        sourceCode,
-        programTypeId,
-        duelId,
-        uid
-      );
+      await this.switchAccounts();
+      return [false, "Could not submit. Please try again."];
     }
   }
 

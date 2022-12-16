@@ -261,43 +261,67 @@ class DuelManager {
   ////////////////////////////////////////////////////////////////////////
   // Submitting
 
-  async submitProblem(id, uid, submission) {
-    console.log("trying to submit problem");
-    try {
-      let duel = await this.getDuel(id);
-      let problem = duel.problems[parseInt(submission.number) - 1];
-      let submitted;
-      if (duel.platform === "CF") {
-        submitted = await this.codeforcesAPI.puppeteerSubmitProblem(
-          problem.accessor.contestId,
-          problem.accessor.index,
-          problem.name,
-          submission.number,
-          submission.content,
-          submission.languageCode,
-          id,
-          uid
-        );
-      } else if (duel.platform === "LC") {
-        submitted = await this.leetcodeAPI.puppeteerSubmitProblem(
-          problem.accessor.slug,
-          problem.name,
-          submission.number,
-          submission.content,
-          submission.languageName, // String (e.g., "C++"),
-          id,
-          uid
-        );
-      } else {
-        // AtCoder
-      }
-      return submitted;
-    } catch (e) {
-      console.log(
-        `Duel ${id} player with uid ${uid} failed to submit problem: ${e}`
-      );
-      return [false, e];
+  async getSubmissionsRequestsFromDatabase() {
+    let result = await db
+      .collection("submissionrequests")
+      .find()
+      .toArray();
+    return result;
+  }
+
+  async fulfillSubmitRequests() {
+    let submissionRequests = await this.getSubmissionsRequestsFromDatabase();
+    let submissions = [];
+    if (!submissionRequests.length) {
+      console.log("No submission requests to fulfill.");
     }
+    for (const request of submissionRequests) {
+      let submitted;
+      try {
+        let duel = await this.getDuel(request.duelId);
+        let problem = duel.problems[parseInt(request.problemNumber) - 1];  
+        if (duel.platform === "CF") {
+          submitted = await this.codeforcesAPI.puppeteerSubmitProblem(
+            problem.accessor.contestId,
+            problem.accessor.index,
+            problem.name,
+            request.problemNumber,
+            request.content,
+            request.languageCode,
+            request.duelId,
+            request.uid
+          );
+        } else if (duel.platform === "LC") {
+          submitted = await this.leetcodeAPI.puppeteerSubmitProblem(
+            problem.accessor.slug,
+            problem.name,
+            request.problemNumber,
+            request.content,
+            request.languageName, // String (e.g., "C++"),
+            request.duelId,
+            request.uid
+          );
+        } else {
+          // AtCoder
+        }
+        submissions.push({
+          status: submitted,
+          duelId: request.duelId,
+          uid: request.uid
+        });
+      } catch (e) {
+        console.log(
+          `Duel ${request.duelId} player with uid ${request.uid} failed to submit problem: ${e}`
+        );
+        submissions.push({
+          status: [false, "Could not submit. Please try again."],
+          duelId: request.duelId,
+          uid: request.uid
+        });
+      }
+      await db.collection("submissionrequests").deleteOne({ _id: request._id });
+    }
+    return submissions;
   }
 
   ////////////////////////////////////////////////////////////////////////

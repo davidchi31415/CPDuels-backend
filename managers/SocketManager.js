@@ -2,7 +2,7 @@ import DuelManager from "./DuelManager.js";
 import TaskManager from "./TaskManager.js";
 import CodeforcesAPI from "../utils/api/CodeforcesAPI.js";
 import LeetcodeAPI from "../utils/api/LeetcodeAPI.js";
-import duelModel, { submissionModel } from "../models/models.js";
+import duelModel, { submissionModel, submissionRequestModel } from "../models/models.js";
 import { sleep } from "../utils/helpers/sleep.js";
 
 class SocketManager {
@@ -58,6 +58,10 @@ class SocketManager {
           }
         }
       });
+
+      //////////////////////////////////////////////////////////////////////////////////
+      // Duel
+
       socket.on("player-ready", async ({ roomId, uid }) => {
         let duel = await this.duelManager.getDuel(roomId);
         if (duel.regeneratingProblems) return; // Do not allow duel to begin while regenerating problems.
@@ -142,6 +146,7 @@ class SocketManager {
           });
         }
       );
+
       socket.on("regenerate-problems", async ({ roomId, problemIndices }) => {
         // regenerate problem with array of problemNumbers
         let duel = await this.duelManager.getDuel(roomId);
@@ -150,6 +155,7 @@ class SocketManager {
         await taskManager.regenerateProblems(duel, problemIndices);
         io.emit("regenerate-problems-completed", { roomId });
       });
+
       socket.on("submit-problem", async ({ roomId, uid, submission }) => {
         console.log(
           `Duel ${roomId}, player with uid ${uid} is submitting a problem.`
@@ -173,23 +179,15 @@ class SocketManager {
             }
           }
           if (validPlayer) {
-            let submitted = await this.duelManager.submitProblem(
-              roomId,
-              uid,
-              submission
-            );
-            if (submitted[0]) {
-              io.emit("problem-submitted-success", {
-                roomId: roomId,
-                uid: uid,
-              });
-            } else {
-              io.emit("problem-submitted-error", {
-                roomId: roomId,
-                uid: uid,
-                message: submitted[1] ? submitted[1] : "Could not submit. Try again.",
-              });
-            }
+            await submissionRequestModel.create({
+              platform: submission.platform,
+              problemNumber: submission.number,
+              languageCode: submission.languageCode,
+              languageName: submission.languageName,
+              content: submission.content,
+              duelId: roomId,
+              uid: uid,
+            });
           } else {
             console.log(`Not a valid uid for submission to Duel ${roomId}`);
             io.emit("problem-submitted-error", {
@@ -200,11 +198,19 @@ class SocketManager {
           }
         } catch (e) {
           console.log(`Error submitting problem in Duel ${roomId}: ${e}`);
+          io.emit("problem-submitted-error", {
+            roomId: roomId,
+            uid: uid,
+            message: "Could not submit. Please try again.",
+          });
         }
       });
+
+      ////////////////////////////////////////////////////////////////////////////////
+      // Abort and Resign
+
       socket.on("abort-duel", async ({ roomId, uid }) => {
         console.log(`Duel ${roomId}, player with uid ${uid} is aborting duel.`);
-
         try {
           let duel = await this.duelManager.getDuel(roomId);
           let validDuel =
@@ -242,6 +248,7 @@ class SocketManager {
           console.log(`Error aborting duel in Duel ${roomId}: ${e}`);
         }
       });
+
       socket.on("resign-duel", async ({ roomId, uid }) => {
         console.log(
           `Duel ${roomId}, player with uid ${uid} is resigning duel.`
@@ -280,6 +287,10 @@ class SocketManager {
           console.log(`Error resigning duel in Duel ${roomId}: ${e}`);
         }
       });
+
+      ////////////////////////////////////////////////////////////////////////////
+      // Chat
+
       socket.on("message-send", async ({ roomId, uid, message }) => {
         try {
           let valid = false;
@@ -306,6 +317,7 @@ class SocketManager {
           console.log(`Error sending message in Duel ${roomId}: ${e}`);
         }
       });
+
       socket.on("message-typing-send", async ({ roomId, uid, author }) => {
         try {
           io.emit("message-typing-receive", {
@@ -335,7 +347,7 @@ class SocketManager {
             item.status,
             item.createdAt
           );
-          this.io.emit("submission-change", { duelId: item.duelId });
+          this.io.emit("submission-change", { duelId: item.duelId, uid: item.uid });
         }
       }
       // let updatedLCSubmissions = await this.leetcodeAPI.updateSubmissions();
@@ -351,6 +363,23 @@ class SocketManager {
       //     this.io.emit("submission-change", { duelId: item.duelId });
       //   }
       // }
+      let updatedSubmissionRequests = await this.duelManager.fulfillSubmitRequests();
+      if (updatedSubmissionRequests?.length) {
+        for (const submitted of updatedSubmissionRequests) {
+          if (submitted.status[0]) {
+            this.io.emit("problem-submitted-success", {
+              roomId: submitted.duelId,
+              uid: submitted.uid,
+            });
+          } else {
+            this.io.emit("problem-submitted-error", {
+              roomId: submitted.duelId,
+              uid: submitted.uid,
+              message: submitted.status[1] ? submitted.status[1] : "Could not submit. Try again.",
+            });
+          }
+        }
+      }
     }
   }
 

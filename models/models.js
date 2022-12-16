@@ -286,7 +286,9 @@ const submissionSchema = mongoose.Schema(
     },
     languageCode: {
       type: "String",
-      required: true,
+    },
+    languageName: {
+      type: "String",
     },
     content: {
       type: String,
@@ -321,6 +323,42 @@ const submissionSchema = mongoose.Schema(
       ],
       required: true,
       default: ["PENDING"], // WA, AC, RTE
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+const submissionRequestSchema = mongoose.Schema(
+  {
+    platform: {
+      type: String,
+      required: true,
+    },
+    problemNumber: {
+      type: Number,
+      required: true,
+    },
+    languageCode: {
+      type: "String",
+      required: true,
+    },
+    languageName: {
+      type: "String",
+      required: true,
+    },
+    content: {
+      type: String,
+      required: true,
+    },
+    duelId: {
+      type: String,
+      required: true,
+    },
+    uid: {
+      type: String,
+      required: true,
     },
   },
   {
@@ -374,6 +412,9 @@ const duelModel = mongoose.models.duelModel
 export const submissionModel = mongoose.models.submissionModel
   ? mongoose.models.submissionModel
   : mongoose.model("Submission", submissionSchema);
+export const submissionRequestModel = mongoose.models.submissionRequestModel
+  ? mongoose.models.submissionRequestModel
+  : mongoose.model("SubmissionRequest", submissionRequestSchema);
 export const messageModel = mongoose.models.messageModel
   ? mongoose.models.messageModel
   : mongoose.model("Message", messageSchema);
