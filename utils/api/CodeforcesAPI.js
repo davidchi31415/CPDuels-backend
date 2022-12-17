@@ -56,14 +56,13 @@ class CodeforcesAPI {
     // Scraping
     this.currentScraperBrowser = false;
     this.currentScraperPage = false;
-    this.xvfb = new Xvfb({
-      silent: true,
-      xvfb_args: ["-screen", "0", '1280x720x24', "-ac"],
-    });
   }
 
   async init() {
-    this.xvfb.start((err)=>{if (err) console.error(err)});
+    let xvfb = new Xvfb({
+      silent: true,
+      xvfb_args: ["-screen", "0", '1280x720x24', "-ac"],
+    });
     await this.puppeteerLogin();
     await this.ensureCheckerBrowser();
   }
@@ -137,7 +136,7 @@ class CodeforcesAPI {
   async ensureSubmitBrowser() {
     if (this.currentSubmitBrowser) return;
     this.currentSubmitBrowser = await puppeteer.launch({
-      args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox", '--display='+this.xvfb._display],
+      args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
       headless: false,
       ignoreHTTPSErrors: true,
       executablePath: executablePath(),
@@ -337,7 +336,7 @@ class CodeforcesAPI {
   async ensureCheckerBrowser() {
     if (this.currentCheckerBrowser) return;
     this.currentCheckerBrowser = await puppeteer.launch({
-      args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox", '--display='+this.xvfb._display],
+      args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
       headless: false,
       ignoreHTTPSErrors: true,
       executablePath: executablePath(),
@@ -735,7 +734,7 @@ class CodeforcesAPI {
   async ensureScraperBrowser() {
     if (this.currentScraperBrowser) return;
     this.currentScraperBrowser = await puppeteer.launch({
-      args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox", '--display='+this.xvfb._display],
+      args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
       headless: false,
       ignoreHTTPSErrors: true,
       executablePath: executablePath(),
