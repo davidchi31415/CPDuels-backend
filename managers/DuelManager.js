@@ -47,12 +47,13 @@ class DuelManager {
     }
     let validParams;
     if (platform === "CF") {
-      validParams = CodeforcesAPI.checkDuelParams(ratingMin, ratingMax);
-    } else if (platform === "AT") {
+      validParams = CodeforcesAPI.checkDuelParams(ratingMin, ratingMax); // Only one supported for now
+    } // else if (platform === "AT") {
       // validParams = await AtcoderAPI.checkDuelParams(players[0].username, ratingMin, ratingMax);
-    } else if (platform === "LC") {
-      validParams = LeetcodeAPI.checkDuelParams(ratingMin, ratingMax);
-    } else {
+    // } else if (platform === "LC") {
+    //  validParams = LeetcodeAPI.checkDuelParams(ratingMin, ratingMax);
+    // }
+    else {
       return [false, "Invalid Platform"];
     }
     if (!validParams[0]) return [false, validParams[1]];
@@ -110,19 +111,28 @@ class DuelManager {
 
   async initializeDuel(id) {
     await this.changeDuelState(id, "INITIALIZED");
-    await this.addProblems(id);
-  }
-
-  async startDuel(id) {
-    await this.changeDuelState(id, "ONGOING");
-    var startTime = new Date().getTime() / 1000;
     await duelModel.findOneAndUpdate(
       {
         _id: ObjectId(id),
       },
       {
         $set: {
-          startTime: startTime,
+          initializeTime: Date.now() / 1000,
+        },
+      }
+    );
+    await this.addProblems(id);
+  }
+
+  async startDuel(id) {
+    await this.changeDuelState(id, "ONGOING");
+    await duelModel.findOneAndUpdate(
+      {
+        _id: ObjectId(id),
+      },
+      {
+        $set: {
+          startTime: Date.now() / 1000,
         },
       }
     );
@@ -258,6 +268,46 @@ class DuelManager {
 		return result;
 	}
 
+  async getInactiveDuelsFromDatabase() {
+    let waitingDuels = await db
+      .collection("duels")
+      .find({
+        status: {
+          $eq: "WAITING",
+        },
+        createTime: {
+          $lt: Date.now() / 1000 - 300
+        }
+      })
+      .toArray();
+    let initializedDuels = await db
+      .collection("duels")
+      .find({
+        status: {
+          $eq: "INITIALIZED",
+        },
+        initializeTime: {
+          $lt: Date.now() / 1000 - 300
+        }
+      })
+      .toArray();
+    return waitingDuels.concat(initializedDuels);
+  }
+
+  async abortInactiveDuels() {
+    let duelsToAbort = await this.getInactiveDuelsFromDatabase();
+    if (!duelsToAbort?.length) {
+      console.log("No inactive duels to abort.");
+    }
+    let abortedDuelIds = [];
+    for (let i = 0; i < duelsToAbort.length; i++) {
+      await this.abortDuel(duelsToAbort[i]._id);
+      console.log(`Duel ${duelsToAbort[i]._id} aborted.`);
+      abortedDuelIds.push(duelsToAbort[i]._id);
+    }
+    return abortedDuelIds;
+  }
+
   ////////////////////////////////////////////////////////////////////////
   // Submitting
 
@@ -275,7 +325,7 @@ class DuelManager {
     if (!submissionRequests.length) {
       console.log("No submission requests to fulfill.");
     }
-    let lcCount = 0;
+    // let lcCount = 0;
     for (const request of submissionRequests) {
       let submitted;
       try {
@@ -302,7 +352,7 @@ class DuelManager {
             request.duelId,
             request.uid
           );
-          lcCount++;
+          // lcCount++;
         } else {
           // AtCoder
         }

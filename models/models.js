@@ -262,6 +262,12 @@ const duelSchema = mongoose.Schema({
       },
     ],
   },
+  createTime: {
+    type: Number,
+  },
+  initializeTime: {
+    type: Number,
+  },
   startTime: {
     type: Number,
   },

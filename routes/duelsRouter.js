@@ -32,7 +32,7 @@ duelsRouter.post("/add", async (req, res) => {
 	} else if (numDuels >= 50) {
 		res.status(400).json({ message: "Too many duels. We bouta loose all our minutes on railways :(", url: joinStatus[0] });
 	}else {
-		const duel = new duelModel(req.body);
+		const duel = new duelModel({...req.body, createTime: Date.now() / 1000});
 		console.log(req.body);
 		let validDuel = await DuelManager.isValidDuelRequest(
 			req.body.platform,

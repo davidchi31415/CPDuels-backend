@@ -336,7 +336,7 @@ class SocketManager {
     await this.codeforcesAPI.init();
     // await this.leetcodeAPI.init();
     while (true) {
-      await sleep(2000);
+      await sleep(3000);
       let updatedCFSubmissions = await this.codeforcesAPI.updateSubmissions();
       if (updatedCFSubmissions?.length) {
         for (const item of updatedCFSubmissions) {
@@ -350,19 +350,19 @@ class SocketManager {
           this.io.emit("submission-change", { duelId: item.duelId, uid: item.uid });
         }
       }
-      let updatedLCSubmissions = await this.leetcodeAPI.updateSubmissions();
-      if (updatedLCSubmissions?.length) {
-        for (const item of updatedLCSubmissions) {
-          await this.duelManager.updateProblem(
-            item.duelId,
-            item.uid,
-            item.problemNumber,
-            item.status,
-            item.createdAt
-          );
-          this.io.emit("submission-change", { duelId: item.duelId, uid: item.uid });
-        }
-      }
+      // let updatedLCSubmissions = await this.leetcodeAPI.updateSubmissions();
+      // if (updatedLCSubmissions?.length) {
+      //   for (const item of updatedLCSubmissions) {
+      //     await this.duelManager.updateProblem(
+      //       item.duelId,
+      //       item.uid,
+      //       item.problemNumber,
+      //       item.status,
+      //       item.createdAt
+      //     );
+      //     this.io.emit("submission-change", { duelId: item.duelId, uid: item.uid });
+      //   }
+      // }
       let updatedSubmissionRequests = await this.duelManager.fulfillSubmitRequests();
       if (updatedSubmissionRequests?.length) {
         for (const submitted of updatedSubmissionRequests) {
@@ -378,6 +378,14 @@ class SocketManager {
               message: submitted.status[1] ? submitted.status[1] : "Could not submit. Try again.",
             });
           }
+        }
+      }
+      let abortedDuelIds = await this.duelManager.abortInactiveDuels();
+      if (abortedDuelIds?.length) {
+        for (const abortedDuelId of abortedDuelIds) {
+          this.io.emit("duel-aborted-inactive", {
+            roomId: abortedDuelId,
+          });
         }
       }
     }
