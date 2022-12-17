@@ -8,5 +8,4 @@ const corsOptions = {
     optionsSuccessStatus: 200,
 };
 
-export default corsOptions;
-export { allowedOrigins, headless };
+export { corsOptions, allowedOrigins, headless };

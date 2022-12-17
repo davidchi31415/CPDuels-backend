@@ -4,7 +4,7 @@ import DuelManager from "../managers/DuelManager.js";
 import CodeforcesAPI from "../utils/api/CodeforcesAPI.js";
 import db from "../server.js";
 import cors from "cors";
-import corsOptions from "../config/origins.js";
+import { corsOptions } from "../config/origins.js";
 
 const duelsRouter = express.Router();
 duelsRouter.use(cors(corsOptions));
