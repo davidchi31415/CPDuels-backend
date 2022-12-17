@@ -285,10 +285,10 @@ const submissionSchema = mongoose.Schema(
       required: true,
     },
     languageCode: {
-      type: "String",
+      type: String,
     },
     languageName: {
-      type: "String",
+      type: String,
     },
     content: {
       type: String,

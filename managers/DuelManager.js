@@ -275,6 +275,7 @@ class DuelManager {
     if (!submissionRequests.length) {
       console.log("No submission requests to fulfill.");
     }
+    let lcCount = 0;
     for (const request of submissionRequests) {
       let submitted;
       try {
@@ -301,6 +302,7 @@ class DuelManager {
             request.duelId,
             request.uid
           );
+          lcCount++;
         } else {
           // AtCoder
         }

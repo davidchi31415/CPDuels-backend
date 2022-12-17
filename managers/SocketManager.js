@@ -350,19 +350,19 @@ class SocketManager {
           this.io.emit("submission-change", { duelId: item.duelId, uid: item.uid });
         }
       }
-      // let updatedLCSubmissions = await this.leetcodeAPI.updateSubmissions();
-      // if (updatedLCSubmissions?.length) {
-      //   for (const item of updatedLCSubmissions) {
-      //     await this.duelManager.updateProblem(
-      //       item.duelId,
-      //       item.uid,
-      //       item.problemNumber,
-      //       item.status,
-      //       item.createdAt
-      //     );
-      //     this.io.emit("submission-change", { duelId: item.duelId });
-      //   }
-      // }
+      let updatedLCSubmissions = await this.leetcodeAPI.updateSubmissions();
+      if (updatedLCSubmissions?.length) {
+        for (const item of updatedLCSubmissions) {
+          await this.duelManager.updateProblem(
+            item.duelId,
+            item.uid,
+            item.problemNumber,
+            item.status,
+            item.createdAt
+          );
+          this.io.emit("submission-change", { duelId: item.duelId, uid: item.uid });
+        }
+      }
       let updatedSubmissionRequests = await this.duelManager.fulfillSubmitRequests();
       if (updatedSubmissionRequests?.length) {
         for (const submitted of updatedSubmissionRequests) {

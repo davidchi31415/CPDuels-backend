@@ -59,10 +59,6 @@ class CodeforcesAPI {
   }
 
   async init() {
-    let xvfb = new Xvfb({
-      silent: true,
-      xvfb_args: ["-screen", "0", '1280x720x24', "-ac"],
-    });
     await this.puppeteerLogin();
     await this.ensureCheckerBrowser();
   }
@@ -137,7 +133,7 @@ class CodeforcesAPI {
     if (this.currentSubmitBrowser) return;
     this.currentSubmitBrowser = await puppeteer.launch({
       args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
-      headless: false,
+      headless: headless,
       ignoreHTTPSErrors: true,
       executablePath: executablePath(),
     });
@@ -337,7 +333,7 @@ class CodeforcesAPI {
     if (this.currentCheckerBrowser) return;
     this.currentCheckerBrowser = await puppeteer.launch({
       args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
-      headless: false,
+      headless: headless,
       ignoreHTTPSErrors: true,
       executablePath: executablePath(),
     });
@@ -735,7 +731,7 @@ class CodeforcesAPI {
     if (this.currentScraperBrowser) return;
     this.currentScraperBrowser = await puppeteer.launch({
       args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
-      headless: false,
+      headless: headless,
       ignoreHTTPSErrors: true,
       executablePath: executablePath(),
     });

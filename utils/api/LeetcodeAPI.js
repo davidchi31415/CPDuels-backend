@@ -192,7 +192,7 @@ class LeetcodeAPI {
 					platform: "LC",
 					problemName: problemName,
 					problemNumber: problemNumber,
-          languageCode: programTypeId,
+          languageName: lang,
           content: commentedsourceCode,
 					url: `https://www.leetcode.com/problems/${slug}/submissions/${submissionId}`,
 					duelId: duelId,
@@ -203,40 +203,16 @@ class LeetcodeAPI {
 			} catch (e) {
 				// Solution failed to submit
 				console.log(
-					`Submitting solution failed with account ${this.currentAccount}: \n ${e} \n Switching accounts and resubmitting`
+					`Submitting LC solution failed: \n ${e} \n`
 				);
-				await this.switchAccounts();
-				return await this.puppeteerSubmitProblem(
-					slug,
-					problemName,
-					problemNumber,
-					sourceCode,
-					lang,
-					duelId,
-					uid
-				);
+				return [false, "Could not submit. Try again"];
 			}
 			console.log(`Solution for ${slug} submitted successfully.`);
 			return [true, submissionId];
 		} catch (err) {
 			console.log("Submit Error: ", err);
-			try {
-				await this.currentSubmitBrowser.close();
-			} catch (err) {
-				console.log("Couldn't close submit broswer: ", err);
-			}
-			this.loggedIn = false;
-			this.currentSubmitBrowser = false;
-			this.currentSubmitPage = false;
-			await this.puppeteerSubmitProblem(
-				slug,
-				problemName,
-				problemNumber,
-				sourceCode,
-				lang,
-				duelId,
-				uid
-			);
+			await this.reLogin();
+			return [false, "Could not submit. Try again"];
 		}
 	}
 
