@@ -2,7 +2,8 @@ FROM node:alpine
 
 WORKDIR /usr/app
 
-RUN apt-get install -y xvfb
+RUN apk update && \
+    apk add install -y xvfb
 RUN export DISPLAY=:0
 RUN /usu/bin/Xvfb :0 -screen 0 1024x768x24 &
 
