@@ -11,4 +11,4 @@ RUN sleep 5
 COPY . .
 RUN npm install
 
-CMD ["xvfb", "node", "server.js"]
+CMD ["npm", "start"]

@@ -10,6 +10,7 @@ import PortalPlugin from "puppeteer-extra-plugin-portal";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import { submissionModel } from "../../models/models.js";
 import { headless } from "../../config/origins.js";
+import Xvfb from "xvfb";
 
 puppeteer.use(StealthPlugin());
 
@@ -55,6 +56,10 @@ class CodeforcesAPI {
     // Scraping
     this.currentScraperBrowser = false;
     this.currentScraperPage = false;
+    this.xvnfb = new Xvfb({
+      silent: true,
+      xvfb_args: ["-screen", "0", '1280x720x24', "-ac"],
+    });
   }
 
   async init() {
@@ -131,7 +136,7 @@ class CodeforcesAPI {
   async ensureSubmitBrowser() {
     if (this.currentSubmitBrowser) return;
     this.currentSubmitBrowser = await puppeteer.launch({
-      args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
+      args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox", '--display='+this.xvfb._display],
       headless: false,
       ignoreHTTPSErrors: true,
       executablePath: executablePath(),
@@ -331,7 +336,7 @@ class CodeforcesAPI {
   async ensureCheckerBrowser() {
     if (this.currentCheckerBrowser) return;
     this.currentCheckerBrowser = await puppeteer.launch({
-      args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
+      args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox", '--display='+this.xvfb._display],
       headless: false,
       ignoreHTTPSErrors: true,
       executablePath: executablePath(),
@@ -729,7 +734,7 @@ class CodeforcesAPI {
   async ensureScraperBrowser() {
     if (this.currentScraperBrowser) return;
     this.currentScraperBrowser = await puppeteer.launch({
-      args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"],
+      args: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox", '--display='+this.xvfb._display],
       headless: false,
       ignoreHTTPSErrors: true,
       executablePath: executablePath(),
