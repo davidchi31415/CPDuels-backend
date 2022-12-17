@@ -56,13 +56,14 @@ class CodeforcesAPI {
     // Scraping
     this.currentScraperBrowser = false;
     this.currentScraperPage = false;
-    this.xvnfb = new Xvfb({
+    this.xvfb = new Xvfb({
       silent: true,
       xvfb_args: ["-screen", "0", '1280x720x24', "-ac"],
     });
   }
 
   async init() {
+    this.xvfb.start((err)=>{if (err) console.error(err)});
     await this.puppeteerLogin();
     await this.ensureCheckerBrowser();
   }
