@@ -461,6 +461,7 @@ class CodeforcesAPI {
         console.log(
           `Could not update submission ${submission.submissionId}: \n Verdict not found.`
         );
+        return;
       }
     } catch (err) {
       console.log("Check Error: ", err);

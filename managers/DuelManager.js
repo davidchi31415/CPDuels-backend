@@ -326,8 +326,7 @@ class DuelManager {
 
   ////////////////////////////////////////////////////////////////////////
   // Updating
-  async getPlayerNumber(duelId, uid) {
-    let duel = await this.getDuel(duelId);
+  async getPlayerNumber(duel, uid) {
     let playerNum = false;
     for (let i = 0; i < duel.players.length; i++) {
       if (duel.players[i].uid === uid) return i + 1;
@@ -339,7 +338,7 @@ class DuelManager {
     // Check if necessary to update
     if (status[0] === "PENDING") return; // Don't update if the status is still pending
     let duel = await this.getDuel(duelId);
-    let playerNumber = await this.getPlayerNumber(duelId, uid); // 1-indexed
+    let playerNumber = await this.getPlayerNumber(duel, uid); // 1-indexed
     let playerIndex = playerNumber - 1;
     let problemIndex = problemNumber - 1;
     let problemToUpdate = duel.problems[problemIndex];
