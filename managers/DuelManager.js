@@ -276,7 +276,7 @@ class DuelManager {
           $eq: "WAITING",
         },
         createTime: {
-          $lt: Date.now() / 1000 - 300
+          $lt: Date.now() / 1000 - 120
         }
       })
       .toArray();
@@ -287,7 +287,7 @@ class DuelManager {
           $eq: "INITIALIZED",
         },
         initializeTime: {
-          $lt: Date.now() / 1000 - 300
+          $lt: Date.now() / 1000 - 120
         }
       })
       .toArray();
