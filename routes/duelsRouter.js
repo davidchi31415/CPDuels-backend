@@ -69,25 +69,25 @@ duelsRouter.patch("/:id", getDuel, async (req, res) => {
 	}
 });
 
-// DELETE one duel
-duelsRouter.delete("/:id", getDuel, async (req, res) => {
-	try {
-		await res.duel.delete();
-		res.json({ message: "Duel deleted." });
-	} catch (err) {
-		res.status(500).json({ message: err.message });
-	}
-});
+// // DELETE one duel
+// duelsRouter.delete("/:id", getDuel, async (req, res) => {
+// 	try {
+// 		await res.duel.delete();
+// 		res.json({ message: "Duel deleted." });
+// 	} catch (err) {
+// 		res.status(500).json({ message: err.message });
+// 	}
+// });
 
-// DELETE all duels
-duelsRouter.delete("/", async (req, res) => {
-	try {
-		await duelModel.deleteMany();
-		res.json({ message: "All duels deleted." });
-	} catch (err) {
-		res.status(500).json({ message: err.message });
-	}
-});
+// // DELETE all duels
+// duelsRouter.delete("/", async (req, res) => {
+// 	try {
+// 		await duelModel.deleteMany();
+// 		res.json({ message: "All duels deleted." });
+// 	} catch (err) {
+// 		res.status(500).json({ message: err.message });
+// 	}
+// });
 
 async function getDuel(req, res, next) {
 	let duel;

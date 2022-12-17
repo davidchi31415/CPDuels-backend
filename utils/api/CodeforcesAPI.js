@@ -29,16 +29,11 @@ class CodeforcesAPI {
   constructor() {
     //this.client = superagent.agent();
     this.loginInfo = new circularArray([
-      ["cpduels-bot", "davidandjeffrey"],
-      ["cpduels-bot2", "davidandjeffrey"],
-      ["cpduels-bot3", "davidandjeffrey"],
-      ["cpduels-bot4", "davidandjeffrey"],
-      ["cpduels-bot5", "davidandjeffrey"],
-      // ["cpduels-bot6", "davidandjeffrey"],
-      // ["cpduels-bot7", "davidandjeffrey"],
-      // ["cpduels-bot8", "davidandjeffrey"],
-      // ["cpduels-bot9", "davidandjeffrey"],
-      // ["cpduels-bot10", "davidandjeffrey"],
+      ["cpduels-bot", process.env.CF_PASSWORD],
+      ["cpduels-bot2", process.env.CF_PASSWORD],
+      ["cpduels-bot3", process.env.CF_PASSWORD],
+      ["cpduels-bot4", process.env.CF_PASSWORD],
+      ["cpduels-bot5", process.env.CF_PASSWORD],
     ]);
 
     // Submitting

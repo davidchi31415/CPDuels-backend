@@ -24,8 +24,7 @@ var corsOptions = {
 app.use(cors(corsOptions));
 const PORT = process.env.PORT || 8080;
 const DATABASE_URL =
-  process.env.DATABASE_URL ||
-  "mongodb://mongo:x9CGsku3E7kTrcvxZ15C@containers-us-west-81.railway.app:7259";
+  process.env.MONGO_URL;
 
 mongoose.connect(DATABASE_URL);
 const db = mongoose.connection;

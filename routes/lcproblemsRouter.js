@@ -34,25 +34,25 @@ lcproblemsRouter.get('/:id', getProblem, (req, res) => {
 
 });
 
-// DELETE one problem
-lcproblemsRouter.delete('/:id', getProblem, async (req, res) => {
-  try {
-    await res.problem.delete();
-    res.json({ message: "Problem deleted." });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
+// // DELETE one problem
+// lcproblemsRouter.delete('/:id', getProblem, async (req, res) => {
+//   try {
+//     await res.problem.delete();
+//     res.json({ message: "Problem deleted." });
+//   } catch (err) {
+//     res.status(500).json({ message: err.message });
+//   }
+// });
 
-// DELETE all problems
-lcproblemsRouter.delete('/', async (req, res) => {
-  try {
-    await lcproblemModel.deleteMany();
-    res.json({ message: "All problems deleted." });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-})
+// // DELETE all problems
+// lcproblemsRouter.delete('/', async (req, res) => {
+//   try {
+//     await lcproblemModel.deleteMany();
+//     res.json({ message: "All problems deleted." });
+//   } catch (err) {
+//     res.status(500).json({ message: err.message });
+//   }
+// })
 
 async function getProblem(req, res, next) {
   let problem;

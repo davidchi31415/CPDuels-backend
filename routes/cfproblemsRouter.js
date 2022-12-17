@@ -34,25 +34,25 @@ cfproblemsRouter.get('/:id', getProblem, (req, res) => {
 
 });
 
-// DELETE one problem
-cfproblemsRouter.delete('/:id', getProblem, async (req, res) => {
-  try {
-    await res.problem.delete();
-    res.json({ message: "Problem deleted." });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
+// // DELETE one problem
+// cfproblemsRouter.delete('/:id', getProblem, async (req, res) => {
+//   try {
+//     await res.problem.delete();
+//     res.json({ message: "Problem deleted." });
+//   } catch (err) {
+//     res.status(500).json({ message: err.message });
+//   }
+// });
 
-// DELETE all problems
-cfproblemsRouter.delete('/', async (req, res) => {
-  try {
-    await cfproblemModel.deleteMany();
-    res.json({ message: "All problems deleted." });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-})
+// // DELETE all problems
+// cfproblemsRouter.delete('/', async (req, res) => {
+//   try {
+//     await cfproblemModel.deleteMany();
+//     res.json({ message: "All problems deleted." });
+//   } catch (err) {
+//     res.status(500).json({ message: err.message });
+//   }
+// })
 
 async function getProblem(req, res, next) {
   let problem;

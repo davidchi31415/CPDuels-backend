@@ -18,25 +18,25 @@ submissionsRouter.get("/:id", getSubmission, (req, res) => {
 	res.send(res.submission);
 });
 
-// DELETE one submission
-submissionsRouter.delete("/:id", getSubmission, async (req, res) => {
-	try {
-		await res.submission.delete();
-		res.json({ message: "Submission deleted." });
-	} catch (err) {
-		res.status(500).json({ message: err.message });
-	}
-});
+// // DELETE one submission
+// submissionsRouter.delete("/:id", getSubmission, async (req, res) => {
+// 	try {
+// 		await res.submission.delete();
+// 		res.json({ message: "Submission deleted." });
+// 	} catch (err) {
+// 		res.status(500).json({ message: err.message });
+// 	}
+// });
 
-// DELETE all submissions
-submissionsRouter.delete("/", async (req, res) => {
-	try {
-		await submissionModel.deleteMany();
-		res.json({ message: "All submissions deleted." });
-	} catch (err) {
-		res.status(500).json({ message: err.message });
-	}
-});
+// // DELETE all submissions
+// submissionsRouter.delete("/", async (req, res) => {
+// 	try {
+// 		await submissionModel.deleteMany();
+// 		res.json({ message: "All submissions deleted." });
+// 	} catch (err) {
+// 		res.status(500).json({ message: err.message });
+// 	}
+// });
 
 async function getSubmission(req, res, next) {
 	let submission;

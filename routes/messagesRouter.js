@@ -36,25 +36,25 @@ messagesRouter.post("/add", async (req, res) => {
   }
 });
 
-// DELETE one message
-messagesRouter.delete("/:id", getMessage, async (req, res) => {
-  try {
-    await res.message.delete();
-    res.json({ message: "Message deleted." });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
+// // DELETE one message
+// messagesRouter.delete("/:id", getMessage, async (req, res) => {
+//   try {
+//     await res.message.delete();
+//     res.json({ message: "Message deleted." });
+//   } catch (err) {
+//     res.status(500).json({ message: err.message });
+//   }
+// });
 
-// DELETE all messages
-messagesRouter.delete("/", async (req, res) => {
-  try {
-    await messageModel.deleteMany();
-    res.json({ message: "All messages deleted." });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
+// // DELETE all messages
+// messagesRouter.delete("/", async (req, res) => {
+//   try {
+//     await messageModel.deleteMany();
+//     res.json({ message: "All messages deleted." });
+//   } catch (err) {
+//     res.status(500).json({ message: err.message });
+//   }
+// });
 
 async function getMessage(req, res, next) {
   let message;
