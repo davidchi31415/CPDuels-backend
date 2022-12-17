@@ -16,10 +16,6 @@ import messagesRouter from "./routes/messagesRouter.js";
 import genInfoRouter from "./routes/genInfoRouter.js";
 import LeetcodeAPI from "./utils/api/LeetcodeAPI.js";
 const app = express();
-var corsOptions = {
-  origin: allowedOrigins,
-  optionsSuccessStatus: 200,
-};
 
 app.use(cors(corsOptions));
 const PORT = process.env.PORT || 8080;
